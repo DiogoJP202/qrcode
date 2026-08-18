@@ -1,0 +1,10 @@
+{
+  "description": "This web application provides users with easy access to instructions and guides, enhancing learning and improving task efficiency for various activities.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
