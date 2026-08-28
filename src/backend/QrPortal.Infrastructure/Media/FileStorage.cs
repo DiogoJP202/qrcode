@@ -57,6 +57,7 @@ public sealed class S3CompatibleFileStorage : IFileStorage, IDisposable
         _client = new AmazonS3Client(_options.S3.AccessKey, _options.S3.SecretKey, new AmazonS3Config
         {
             ServiceURL = _options.S3.ServiceUrl,
+            AuthenticationRegion = string.IsNullOrWhiteSpace(_options.S3.Region) ? null : _options.S3.Region,
             ForcePathStyle = true
         });
     }

@@ -24,3 +24,5 @@ O banco armazena metadados e chaves; nunca binários.
 - checksum SHA-256 para integridade e futura deduplicação.
 
 Uploads são endpoints vinculados a produto/loja já autorizados, reduzindo órfãos. Falhas removem objetos parciais.
+
+Em desenvolvimento, a API carrega o `.env` mais próximo da raiz do Git sem sobrescrever variáveis já definidas no processo. Credenciais padrão `AWS_ENDPOINT_URL_S3`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` e `AWS_REGION` ativam automaticamente o provider S3. Informe também `AWS_S3_BUCKET`; `AWS_S3_PUBLIC_URL` é opcional e, quando ausente, usa `{endpoint}/{bucket}`. O bucket de imagens públicas precisa permitir leitura pública no provedor.

@@ -9,7 +9,13 @@ using QrPortal.Api.Infrastructure;
 using QrPortal.Infrastructure;
 using QrPortal.Infrastructure.Configuration;
 
+if (string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), Environments.Development, StringComparison.OrdinalIgnoreCase))
+{
+    DotEnvLoader.LoadNearest(Directory.GetCurrentDirectory());
+}
+
 var builder = WebApplication.CreateBuilder(args);
+StorageConfiguration.ApplyAwsS3Compatibility(builder.Configuration);
 
 builder.Logging.ClearProviders();
 builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);

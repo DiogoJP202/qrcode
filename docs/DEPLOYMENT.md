@@ -27,6 +27,8 @@ Desenvolvimento usa PostgreSQL e Mailpit via Compose e storage local. Staging re
 
 Documentar e fornecer exemplos para connection string, frontend origin, domínio público, Google OAuth, SMTP, S3 endpoint/bucket/credentials e `DataProtection__KeysPath`. O diretório de chaves deve estar em volume persistente, gravável pelo usuário `app` do container. Nenhum secret é commitado.
 
+O `.env` raiz é carregado automaticamente apenas em `Development`. Para Neon Object Storage, são aceitas as variáveis AWS geradas pelo serviço e as adicionais `AWS_S3_BUCKET` e `AWS_S3_PUBLIC_URL`. Produção deve fornecer os mesmos valores pelo gerenciador de secrets da plataforma, não por arquivo versionado.
+
 O repositório inclui `src/backend/QrPortal.Api/Dockerfile` e `src/frontend/qrportal-web/Dockerfile`. A API roda como usuário não-root na porta 8080; o container web usa Nginx com fallback do Angular e headers de segurança. Antes do deploy:
 
 ```text

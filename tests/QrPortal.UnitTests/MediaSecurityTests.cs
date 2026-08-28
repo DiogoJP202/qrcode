@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using QrPortal.Infrastructure.Configuration;
 using QrPortal.Infrastructure.Media;
@@ -39,5 +40,28 @@ public sealed class MediaSecurityTests
         var storage = new LocalFileStorage(Options.Create(new StorageOptions { LocalRoot = root }));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => storage.PutAsync("../escape.txt", Stream.Null, "text/plain", CancellationToken.None));
+    }
+
+    [Fact]
+    public void Aws_environment_is_mapped_to_s3_options()
+    {
+        var values = new Dictionary<string, string?>
+        {
+            ["AWS_ENDPOINT_URL_S3"] = "https://storage.example.test/",
+            ["AWS_ACCESS_KEY_ID"] = "access",
+            ["AWS_SECRET_ACCESS_KEY"] = "secret",
+            ["AWS_REGION"] = "us-east-2",
+            ["AWS_S3_BUCKET"] = "menu-images"
+        };
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+
+        var applied = StorageConfiguration.ApplyAwsS3Compatibility(configuration);
+
+        Assert.True(applied);
+        Assert.Equal("S3", configuration["Storage:Provider"]);
+        Assert.Equal("https://storage.example.test", configuration["Storage:S3:ServiceUrl"]);
+        Assert.Equal("us-east-2", configuration["Storage:S3:Region"]);
+        Assert.Equal("menu-images", configuration["Storage:S3:Bucket"]);
+        Assert.Equal("https://storage.example.test/menu-images", configuration["Storage:PublicBaseUrl"]);
     }
 }

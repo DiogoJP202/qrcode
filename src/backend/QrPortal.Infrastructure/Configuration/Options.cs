@@ -32,6 +32,7 @@ public sealed class S3Options
 {
     public string ServiceUrl { get; set; } = string.Empty;
     public string Bucket { get; set; } = "qrportal";
+    public string Region { get; set; } = string.Empty;
     public string AccessKey { get; set; } = string.Empty;
     public string SecretKey { get; set; } = string.Empty;
 }
