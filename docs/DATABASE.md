@@ -34,3 +34,5 @@ Migrations EF Core são versionadas no repositório e aplicadas em etapa control
 ## Concorrência e datas
 
 Escritas atualizam `UpdatedAt` no `DbContext`; mutações em conteúdo também tocam o cardápio pai para invalidar seu ETag. A API evita graph loading indiscriminado e pagina listagens privadas.
+
+Em desenvolvimento, `ConnectionStrings__DefaultConnection` aceita tanto o formato ADO.NET/Npgsql (`Host=...;Username=...`) quanto a URL `postgresql://...` fornecida pelo Neon. A URL é normalizada antes de chegar ao driver e preserva `sslmode` e `channel_binding` quando informados.

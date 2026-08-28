@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using Npgsql;
 using QrPortal.Infrastructure.Configuration;
 using QrPortal.Infrastructure.Media;
 
@@ -63,5 +64,23 @@ public sealed class MediaSecurityTests
         Assert.Equal("us-east-2", configuration["Storage:S3:Region"]);
         Assert.Equal("menu-images", configuration["Storage:S3:Bucket"]);
         Assert.Equal("https://storage.example.test/menu-images", configuration["Storage:PublicBaseUrl"]);
+    }
+
+    [Fact]
+    public void Neon_postgres_url_is_normalized_for_npgsql()
+    {
+        var normalized = PostgresConnectionString.Normalize(
+            "postgresql://menu%40user:p%40ss%3Aword@db.example.test:5433/qrportal?sslmode=require&channel_binding=require");
+        var builder = new NpgsqlConnectionStringBuilder(normalized);
+
+        Assert.Equal("db.example.test", builder.Host);
+        Assert.Equal(5433, builder.Port);
+        Assert.Equal("menu@user", builder.Username);
+        Assert.Equal("p@ss:word", builder.Password);
+        Assert.Equal("qrportal", builder.Database);
+        Assert.Equal(SslMode.Require, builder.SslMode);
+        Assert.Equal(ChannelBinding.Require, builder.ChannelBinding);
+        Assert.False(builder.IncludeErrorDetail);
+        Assert.False(builder.LogParameters);
     }
 }

@@ -16,6 +16,11 @@ if (string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), 
 
 var builder = WebApplication.CreateBuilder(args);
 StorageConfiguration.ApplyAwsS3Compatibility(builder.Configuration);
+var configuredConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (!string.IsNullOrWhiteSpace(configuredConnectionString))
+{
+    builder.Configuration["ConnectionStrings:DefaultConnection"] = PostgresConnectionString.Normalize(configuredConnectionString);
+}
 
 builder.Logging.ClearProviders();
 builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);

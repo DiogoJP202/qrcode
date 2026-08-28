@@ -9,8 +9,9 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<App
     public ApplicationDbContext CreateDbContext(string[] args)
     {
         DotEnvLoader.LoadNearest(Directory.GetCurrentDirectory());
-        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-            ?? "Host=localhost;Port=5432;Database=qrportal;Username=qrportal;Password=qrportal_dev";
+        var connectionString = PostgresConnectionString.Normalize(
+            Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+            ?? "Host=localhost;Port=5432;Database=qrportal;Username=qrportal;Password=qrportal_dev");
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseNpgsql(connectionString)
             .Options;
