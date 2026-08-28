@@ -1,27 +1,15 @@
 {
-  "name": "figma-make-app",
+  "name": "qrportal",
   "private": true,
-  "version": "1.0.0",
-  "type": "module",
+  "packageManager": "pnpm@11.19.0",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
-    "preview": "vite preview",
-    "format": "oxfmt"
-  },
-  "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^22.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^6.0.0",
-    "tailwindcss": "^4.0.0",
-    "@tailwindcss/vite": "^4.0.0",
-    "oxfmt": "^0.2.0",
-    "typescript": "^5.7.0",
-    "vite": "^8.0.0"
+    "web:start": "pnpm --dir src/frontend/qrportal-web start",
+    "web:build": "pnpm --dir src/frontend/qrportal-web build",
+    "web:test": "pnpm --dir src/frontend/qrportal-web exec ng test --watch=false",
+    "web:e2e": "pnpm --dir src/frontend/qrportal-web e2e",
+    "api:start": "dotnet run --project src/backend/QrPortal.Api",
+    "contracts": "pnpm --dir src/frontend/qrportal-web api:generate",
+    "build": "dotnet build QrPortal.sln && pnpm web:build",
+    "test": "dotnet test QrPortal.sln && pnpm web:test"
   }
 }

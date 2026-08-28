@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: qrportal_test
+          POSTGRES_USER: qrportal
+          POSTGRES_PASSWORD: qrportal_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U qrportal -d qrportal_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: dotnet restore QrPortal.sln
+      - run: dotnet build QrPortal.sln --no-restore --configuration Release
+      - run: dotnet test QrPortal.sln --no-build --configuration Release
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm web:build
+      - run: pnpm web:test
+      - run: dotnet tool restore
+      - name: Verify EF model matches migrations
+        run: dotnet tool run dotnet-ef migrations has-pending-model-changes --project src/backend/QrPortal.Infrastructure --startup-project src/backend/QrPortal.Api --configuration Release --no-build
+      - name: Apply migrations to clean PostgreSQL
+        run: dotnet tool run dotnet-ef database update --project src/backend/QrPortal.Infrastructure --startup-project src/backend/QrPortal.Api --configuration Release --no-build
+        env:
+          ASPNETCORE_ENVIRONMENT: E2E
+          ConnectionStrings__DefaultConnection: Host=127.0.0.1;Port=5432;Database=qrportal_test;Username=qrportal;Password=qrportal_test
+      - run: pnpm --dir src/frontend/qrportal-web exec playwright install --with-deps chromium
+      - run: pnpm web:e2e
+        env:
+          CI: true
+          QRPORTAL_E2E_CONNECTION: Host=127.0.0.1;Port=5432;Database=qrportal_test;Username=qrportal;Password=qrportal_test

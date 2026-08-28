@@ -1,41 +1,42 @@
-# figma-make-app
+# QRPortal
 
-React + Vite + Tailwind CSS project running inside Figma Make.
+SaaS de cardápios digitais em monorepo. O protótipo React original está congelado em `legacy/prototype-react` e não deve ser usado como arquitetura da aplicação nova.
 
-## Development Server
+## Estrutura canônica
 
-A Vite development server is **already running** on `$PORT` (default 8443). You don't need to start it manually.
+- `src/backend/QrPortal.Api` — controllers, middleware e composição ASP.NET Core;
+- `src/backend/QrPortal.Application` — contratos e abstrações;
+- `src/backend/QrPortal.Domain` — entidades e invariantes;
+- `src/backend/QrPortal.Infrastructure` — EF Core, Identity, storage, mídia e SMTP;
+- `src/frontend/qrportal-web` — Angular 22 standalone e Tailwind CSS 4;
+- `tests` — xUnit unitário e integração/Testcontainers;
+- `docs` — fonte de verdade arquitetural e ADRs;
+- `legacy/prototype-react` — referência visual preservada.
 
-- Preview URL: The user can access the running app through the preview panel
-- Hot reload: Changes to source files are reflected immediately
+## Comandos
 
-## Project Structure
+```text
+docker compose up -d postgres mailpit
+dotnet run --project src/backend/QrPortal.Api --launch-profile http
+pnpm web:start
+pnpm build
+pnpm test
+pnpm web:e2e
+```
 
-This is the canonical project structure. Start with task-relevant files below. Only follow imports or inspect other files when required, when a documented path is missing, or when the repository contradicts this guide.
+O frontend local usa `http://localhost:4200` e encaminha `/api` para `http://localhost:5043`. O Mailpit usa `http://localhost:8025`.
 
-- `src/main.tsx` - React entrypoint; imports `src/index.css` and mounts `src/App.tsx` into the `#root` element
-- `src/App.tsx` - Primary application component and the usual starting point for UI work
-- `src/index.css` - Global CSS entrypoint and Tailwind CSS v4 import
-- `index.html` - Vite HTML shell containing the `#root` element and loading `src/main.tsx`
-- `package.json` - Project dependencies and the Vite build, development, preview, and formatting scripts
-- `vite.config.ts` - Vite configuration with React, Tailwind CSS v4, and Figma Make plugins plus the `@` alias for `src`
-- `.mise.toml` - Toolchain versions for Node.js and pnpm
+## Regras de implementação
 
-## Dependencies
+- Use C# nullable, UUID v7, UTC, contratos explícitos e ProblemDetails.
+- Toda consulta privada deve filtrar membership de loja; IDs do cliente não provam ownership.
+- Mutações web passam por cookie HttpOnly e antiforgery `X-CSRF-TOKEN`.
+- Angular usa componentes standalone, signals para estado local, RxJS para I/O e typed reactive forms.
+- Use Tailwind diretamente nos templates; tokens/globais ficam em `src/styles.css`.
+- Tipos OpenAPI em `src/app/core/generated` são gerados; atualize com `pnpm contracts` enquanto a API local estiver ativa.
+- Migrations são explícitas e nunca executadas automaticamente no startup de produção.
+- Não introduza NgRx, MediatR, AutoMapper, microservices, CSS arbitrário ou secrets no repositório.
 
-- Runtime: React 19 and React DOM 19
-- Styling: Tailwind CSS v4 with the `@tailwindcss/vite` plugin
-- Build tooling: Vite 8, TypeScript 5.7, and `@vitejs/plugin-react`
-- Formatting: oxfmt
+## Qualidade
 
-## Styling
-
-This project uses **Tailwind CSS v4** through the `@tailwindcss/vite` plugin configured in `vite.config.ts`. `src/index.css` imports Tailwind with `@import 'tailwindcss';`. Use Tailwind utility classes directly in JSX and put global CSS or Tailwind v4 theme customization in `src/index.css`. This scaffold does not need a Tailwind config file or PostCSS config.
-
-`src/main.tsx` imports `src/index.css`, so global font wiring belongs in `src/index.css`. Keep CSS `@import` statements first, then add any `@font-face` rules and font-family defaults there.
-
-## Code quality
-
-- Use double quotes for strings containing apostrophes (`"We're here to help"`), or escape them in single-quoted strings. An unescaped apostrophe in a single-quoted string breaks the build.
-- Ensure JSX tags are closed and braces are balanced.
-- Export components as default exports.
+Antes de entregar mudanças estruturais, rode build e testes de backend/frontend. Para mudanças visuais, valide 375, 768, 1024 e 1440 px. Atualize a documentação/ADR quando uma decisão arquitetural mudar.
