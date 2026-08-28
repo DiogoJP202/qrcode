@@ -17,6 +17,18 @@ namespace QrPortal.IntegrationTests;
 
 public sealed class PostgresWorkflowTests
 {
+    [Fact]
+    public void Database_factory_replaces_the_application_connection_string()
+    {
+        const string connectionString = "Host=database.test;Port=5433;Database=qrportal;Username=tester;Password=test-password";
+        using var factory = new DatabaseApiFactory(connectionString);
+        using var scope = factory.Services.CreateScope();
+
+        var configured = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.GetConnectionString();
+
+        Assert.Equal(connectionString, configured);
+    }
+
     [DockerFact]
     public async Task Registration_csrf_migrations_and_store_isolation_work_together()
     {
@@ -92,6 +104,9 @@ public sealed class DatabaseApiFactory(string connectionString) : WebApplication
         }));
         builder.ConfigureTestServices(services =>
         {
+            services.RemoveAll<ApplicationDbContext>();
+            services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
+            services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
             services.RemoveAll<ITransactionalEmailSender>();
             services.AddSingleton<ITransactionalEmailSender, NoOpEmailSender>();
         });
