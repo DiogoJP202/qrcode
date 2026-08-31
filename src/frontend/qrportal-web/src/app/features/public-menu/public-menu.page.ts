@@ -18,7 +18,7 @@ import { BrandComponent } from "../../shared/brand.component";
       <main class="min-h-screen" [style.background]="menu()!.theme.backgroundColor" [style.--menu-primary]="menu()!.theme.primaryColor" [style.--menu-text]="menu()!.theme.secondaryColor">
         <header class="relative overflow-hidden px-5 pt-12 pb-8 text-center"><div class="pointer-events-none absolute inset-x-0 top-0 h-48 opacity-10" [style.background]="'radial-gradient(circle at 50% 0,' + menu()!.theme.primaryColor + ',transparent 70%)'"></div>@if (menu()!.logoUrl) { <img [src]="menu()!.logoUrl" [alt]="'Logo ' + menu()!.storeName" class="relative mx-auto size-22 rounded-3xl object-contain shadow-lg" /> } @else { <div class="relative mx-auto grid size-22 place-items-center rounded-3xl text-3xl font-black text-white shadow-lg" [style.background]="menu()!.theme.primaryColor">{{ menu()!.storeName.charAt(0) }}</div> }<h1 class="relative mt-5 text-3xl font-black tracking-tight" [style.color]="menu()!.theme.secondaryColor">{{ menu()!.storeName }}</h1><p class="relative mt-1 font-semibold opacity-55" [style.color]="menu()!.theme.secondaryColor">{{ menu()!.menuName }}</p>@if (menu()!.description) { <p class="relative mx-auto mt-3 max-w-lg text-sm leading-6 opacity-60" [style.color]="menu()!.theme.secondaryColor">{{ menu()!.description }}</p> }</header>
 
-        <div class="sticky top-0 z-20 border-y border-black/5 bg-white/90 px-4 py-3 backdrop-blur-xl"><nav class="mx-auto flex max-w-3xl gap-2 overflow-x-auto pb-1" aria-label="Categorias">@for (category of filteredCategories(); track category.name) { <a [href]="'#category-' + $index" class="shrink-0 rounded-full px-4 py-2 text-sm font-extrabold text-white" [style.background]="menu()!.theme.primaryColor">{{ category.name }}</a> }</nav></div>
+        <div class="sticky top-0 z-20 border-y border-black/5 bg-white/90 px-4 py-3 backdrop-blur-xl"><nav class="mx-auto flex max-w-3xl gap-2 overflow-x-auto pb-1" aria-label="Categorias">@for (category of filteredCategories(); track category.name) { <button type="button" (click)="scrollToCategory($index)" class="shrink-0 rounded-full px-4 py-2 text-sm font-extrabold text-white" [style.background]="menu()!.theme.primaryColor">{{ category.name }}</button> }</nav></div>
 
         <section class="mx-auto max-w-3xl px-4 py-7 sm:px-6">
           <label class="relative block"><span class="sr-only">Buscar no cardápio</span><svg lucideSearch class="absolute left-4 top-3.5 text-slate-400" size="19"></svg><input class="field !rounded-2xl !pl-12" type="search" placeholder="Buscar um item..." [value]="query()" (input)="query.set($any($event.target).value)" /></label>
@@ -51,5 +51,9 @@ export class PublicMenuPage {
     const query = this.query().trim().toLocaleLowerCase("pt-BR");
     if (!query) return this.menu()?.categories ?? [];
     return (this.menu()?.categories ?? []).map((category) => ({ ...category, products: category.products.filter((product: PublicProduct) => `${product.name} ${product.description ?? ""}`.toLocaleLowerCase("pt-BR").includes(query)) })).filter((category) => category.products.length > 0);
+  }
+
+  scrollToCategory(index: number): void {
+    document.getElementById(`category-${index}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }

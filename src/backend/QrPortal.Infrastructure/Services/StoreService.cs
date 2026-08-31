@@ -80,7 +80,7 @@ public sealed class StoreService(ApplicationDbContext db, ICurrentUser currentUs
     }
 
     private async Task<StoreMember> AuthorizedMember(Guid storeId, CancellationToken cancellationToken)
-        => await db.StoreMembers.Include(member => member.Store)
+        => await db.StoreMembers.Include(member => member.Store).ThenInclude(store => store.LogoFile)
             .SingleOrDefaultAsync(member => member.StoreId == storeId && member.UserId == UserId(), cancellationToken)
             ?? throw new UnauthorizedAccessException("Você não possui acesso a esta loja.");
 

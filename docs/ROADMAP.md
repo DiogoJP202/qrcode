@@ -34,9 +34,19 @@
 - Testcontainers e Playwright completo rodam na CI com Docker/PostgreSQL;
 - Lighthouse ≥90, backup real, credenciais de produção e smoke pós-deploy continuam como gates externos antes do lançamento público.
 
+## Próximo ciclo — estabilização e experiência pública
+
+- corrigir e cobrir regressões de navegação por categoria e persistência visual de logo/imagens;
+- ampliar logging estruturado, auditoria de ações sensíveis, revisão de dados pessoais e alertas operacionais;
+- adicionar personalização segura de tipografia, capa, espaçamentos, layout e componentes, sem CSS arbitrário;
+- implementar foto de perfil da conta com storage, processamento e remoção explícita;
+- criar página pública personalizável de apresentação do restaurante/empresa, separada do cardápio.
+
 ## Pós-MVP
 
 - QR Code PNG/SVG;
+- detalhe público clicável para cada produto, com URL estável e compartilhável;
+- QR Code individual de produto apontando para sua URL pública;
 - cobrança e planos comerciais;
 - analytics por eventos;
 - variações/adicionais e colaboração multiusuário avançada.

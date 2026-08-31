@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
 
+const testPng = {
+  name: "qrportal-e2e.png",
+  mimeType: "image/png",
+  buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64"),
+};
+
 test("cadastro até cardápio público", async ({ page }) => {
   const unique = Date.now().toString(36);
   const storeName = `Bistrô E2E ${unique}`;
@@ -31,8 +37,43 @@ test("cadastro até cardápio público", async ({ page }) => {
   await page.getByRole("button", { name: "Publicar cardápio" }).click();
 
   await expect(page).toHaveURL(/\/m\//);
+  const publicUrl = page.url();
   await expect(page.getByRole("heading", { name: storeName })).toBeVisible();
   await expect(page.getByText("Bowl especial")).toBeVisible();
+
+  for (const width of [375, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: width === 375 ? 812 : 900 });
+    await expect(page.getByRole("heading", { name: storeName })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Pratos principais" })).toBeVisible();
+  }
+
+  await page.getByRole("button", { name: "Pratos principais" }).click();
+  await expect(page).toHaveURL(publicUrl);
+
+  await page.goto("/app/editor?tab=products");
+  await page.locator('input[type="file"]').setInputFiles(testPng);
+  await expect(page.getByText("Imagem processada e salva.")).toBeVisible();
+  await expect(page.getByRole("img", { name: "Bowl especial" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("img", { name: "Bowl especial" })).toBeVisible();
+
+  await page.goto("/app/editor?tab=store");
+  await page.locator('input[type="file"]').setInputFiles(testPng);
+  await expect(page.getByText("Logo atualizado.")).toBeVisible();
+  await expect(page.getByRole("img", { name: "Logo da loja" })).toBeVisible();
+  await page.getByRole("button", { name: "Salvar loja" }).click();
+  await expect(page.getByText("Loja atualizada.")).toBeVisible();
+  await expect(page.getByRole("img", { name: "Logo da loja" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("img", { name: "Logo da loja" })).toBeVisible();
+
+  await page.goto("/app/editor?tab=appearance");
+  await expect(page.getByRole("img", { name: `Logo ${storeName}` })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Bowl especial" })).toBeVisible();
+
+  await page.goto(publicUrl);
+  await expect(page.getByRole("img", { name: `Logo ${storeName}` })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Bowl especial" })).toBeVisible();
 });
 
 test("landing e login permanecem utilizáveis em 375 px", async ({ page }) => {

@@ -11,7 +11,6 @@ public sealed class PublicMenusController(IMenuService menus) : ApiControllerBas
     [HttpGet("{slug}")]
     [AllowAnonymous]
     [EnableRateLimiting("public-menu")]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any)]
     public async Task<IActionResult> Get(string slug, CancellationToken cancellationToken)
     {
         var menu = await menus.GetPublicAsync(slug, cancellationToken);
@@ -19,7 +18,7 @@ public sealed class PublicMenusController(IMenuService menus) : ApiControllerBas
         var etag = $"\"{menu.UpdatedAt.UtcTicks:x}\"";
         if (Request.Headers.IfNoneMatch == etag) return StatusCode(StatusCodes.Status304NotModified);
         Response.Headers.ETag = etag;
-        Response.Headers.CacheControl = "public,max-age=60,stale-while-revalidate=300";
+        Response.Headers.CacheControl = "public,max-age=0,must-revalidate,stale-while-revalidate=60";
         return Ok(menu);
     }
 }

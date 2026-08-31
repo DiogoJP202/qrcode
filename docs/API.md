@@ -41,5 +41,5 @@ GET /public/menus/{slug}
 - Listas usam `page` e `pageSize` (máximo 100) e retornam `items`, `page`, `pageSize` e `total`.
 - Criação retorna `201` e `Location`; deleção retorna `204`.
 - Endpoints mutáveis exigem antiforgery header.
-- Leitura pública retorna DTO mínimo, ETag e cache curto.
+- Leitura pública retorna DTO mínimo e ETag, com revalidação obrigatória para que edições publicadas e mídias apareçam na próxima navegação.
 - O documento OpenAPI gera os tipos em `src/frontend/qrportal-web/src/app/core/generated`; execute `pnpm contracts` com a API local ativa.
