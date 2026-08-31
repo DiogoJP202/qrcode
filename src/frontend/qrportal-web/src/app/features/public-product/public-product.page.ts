@@ -15,7 +15,7 @@ import { BrandComponent } from "../../shared/brand.component";
     } @else if (notFound()) {
       <main class="grid min-h-screen place-items-center bg-slate-50 px-5 text-center"><div><span class="text-6xl">🍽️</span><h1 class="mt-6 text-3xl font-black">Produto não encontrado</h1><p class="mt-3 text-slate-500">O item pode estar indisponível ou o endereço não existe mais.</p><a routerLink="/" class="btn-primary mt-8">Voltar ao início</a></div></main>
     } @else if (details()) {
-      <main class="min-h-screen px-4 py-6 sm:px-6 sm:py-10" [style.background]="details()!.theme.backgroundColor" [style.color]="details()!.theme.secondaryColor">
+      <main class="min-h-screen px-4 py-6 sm:px-6 sm:py-10" [style.background]="details()!.theme.backgroundColor" [style.color]="details()!.theme.secondaryColor" [style.font-family]="fontStack">
         <div class="mx-auto max-w-5xl">
           <header class="flex items-center justify-between gap-4">
             <a [routerLink]="['/m', details()!.menuSlug]" class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-extrabold text-slate-800 shadow-sm transition hover:-translate-x-0.5"><svg lucideArrowLeft size="17"></svg> Cardápio</a>
@@ -24,7 +24,7 @@ import { BrandComponent } from "../../shared/brand.component";
 
           <section class="mt-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10">
             <div>
-              <div class="aspect-square overflow-hidden bg-white shadow-[0_20px_60px_rgba(15,23,42,.1)]" [class]="cardClass">@if (details()!.product.imageUrl || details()!.product.thumbnailUrl) { <img [src]="details()!.product.imageUrl || details()!.product.thumbnailUrl" [alt]="details()!.product.name" class="size-full object-cover" /> } @else { <div class="grid size-full place-items-center text-7xl">🍴</div> }</div>
+              <div class="aspect-square overflow-hidden bg-white shadow-[0_20px_60px_rgba(15,23,42,.1)]" [class]="cardClass">@if (details()!.product.imageUrl || details()!.product.thumbnailUrl) { <img [src]="details()!.product.imageUrl || details()!.product.thumbnailUrl" [alt]="details()!.product.name" class="size-full" [class.object-cover]="details()!.theme.imageStyle === 'cover'" [class.object-contain]="details()!.theme.imageStyle === 'contain'" /> } @else { <div class="grid size-full place-items-center text-7xl">🍴</div> }</div>
               <div class="px-1 pt-7">@if (details()!.product.isFeatured) { <span class="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[11px] font-black uppercase tracking-widest" [style.color]="details()!.theme.primaryColor"><svg lucideStar size="13" fill="currentColor"></svg> Destaque</span> }<p class="mt-4 text-xs font-black uppercase tracking-[.2em] opacity-45">{{ details()!.categoryName }}</p><h1 class="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{{ details()!.product.name }}</h1>@if (details()!.product.description) { <p class="mt-4 max-w-2xl text-base leading-7 opacity-65">{{ details()!.product.description }}</p> }<div class="mt-6 flex items-baseline gap-3">@if (details()!.product.promotionalPrice !== null) { <span class="text-3xl font-black" [style.color]="details()!.theme.primaryColor">{{ details()!.product.promotionalPrice | currency:'BRL' }}</span><span class="text-sm opacity-40 line-through">{{ details()!.product.price | currency:'BRL' }}</span> } @else { <span class="text-3xl font-black" [style.color]="details()!.theme.primaryColor">{{ details()!.product.price | currency:'BRL' }}</span> }</div></div>
             </div>
 
@@ -69,6 +69,7 @@ export class PublicProductPage {
   get cardClass(): string {
     return this.details()?.theme.style === "square" ? "rounded-none" : this.details()?.theme.style === "pill" ? "rounded-[3rem]" : "rounded-3xl";
   }
+  get fontStack(): string { return this.details()?.theme.fontFamily === "serif" ? "Georgia, Cambria, serif" : this.details()?.theme.fontFamily === "rounded" ? "Nunito, ui-rounded, system-ui" : "Inter, ui-sans-serif, system-ui"; }
 
   qrDownloadUrl(format: "png" | "svg"): string {
     return this.api.url(`/public/products/${this.productId}/qr.${format}?download=true`);

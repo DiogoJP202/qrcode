@@ -4,15 +4,16 @@ PostgreSQL é a fonte transacional. Chaves de negócio usam UUID v7 gerados pela
 
 ## Entidades iniciais
 
-- `AspNetUsers`: Identity; e-mail normalizado e confirmação.
-- `Stores`: nome público, slug, descrição, logo e timestamps.
+- `AspNetUsers`: Identity; nome completo, telefone, e-mail normalizado e confirmação.
+- `TermsAcceptances`: usuário, versão dos documentos, instante UTC, IP e localização aproximada opcional da evidência de aceite.
+- `Stores`: nome público, slug, descrição, logo, apresentação pública, contatos, cores/estilo e timestamps.
 - `StoreMembers`: usuário, loja e papel (`Owner`, `Editor`).
 - `Menus`: loja, nome, descrição, slug, moeda, status e publicação.
 - `MenuCategories`: menu, nome, descrição, ordem e ativo.
 - `Products`: categoria, nome, descrição, preços, disponibilidade, destaque e ordem.
 - `StoredFiles`: owner, chave, MIME, variante, bytes, dimensões e checksum.
 - `ProductImages`: produto, arquivo e papel da variante.
-- `MenuThemes`: menu, preset, cores e estilo.
+- `MenuThemes`: menu, preset, cores, estilo, tipografia, layout dos cards e encaixe de imagem.
 - `Plans`: código, limites e recursos.
 - `Subscriptions`: loja, plano, status e vigência.
 - `AuditLogs`: ator, evento, recurso, correlação e timestamp.
@@ -24,6 +25,7 @@ PostgreSQL é a fonte transacional. Chaves de negócio usam UUID v7 gerados pela
 - moeda ISO de três caracteres, inicialmente `BRL`;
 - índices por foreign key, status, slug e ordem;
 - uma membership por `(StoreId, UserId)`;
+- um aceite por `(UserId, TermsVersion)`;
 - um tema por menu; a assinatura ativa é consultada por loja e terá índice exclusivo parcial antes dos planos pagos;
 - exclusões em cascata apenas para filhos estritamente pertencentes ao agregado.
 

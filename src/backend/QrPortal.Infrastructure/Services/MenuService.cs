@@ -170,7 +170,7 @@ public sealed class MenuService(
     public async Task<ThemeDto> UpdateThemeAsync(Guid menuId, UpdateThemeRequest request, CancellationToken cancellationToken)
     {
         var menu = await AuthorizedMenu(menuId, true, cancellationToken);
-        menu.Theme.Update(request.Preset, request.PrimaryColor, request.SecondaryColor, request.BackgroundColor, request.Style);
+        menu.Theme.Update(request.Preset, request.PrimaryColor, request.SecondaryColor, request.BackgroundColor, request.Style, request.FontFamily, request.CardLayout, request.ImageStyle);
         menu.Touch();
         db.AuditLogs.Add(new AuditLog(UserId(), "menu.theme_updated", nameof(Menu), menu.Id, CorrelationId()));
         await db.SaveChangesAsync(cancellationToken);
@@ -255,7 +255,7 @@ public sealed class MenuService(
         var thumb = product.Images.FirstOrDefault(image => image.Variant == "thumbnail")?.File;
         return new PublicProductDto(product.Id, product.Name, product.Description, product.Price, product.PromotionalPrice, product.IsFeatured, Url(main), Url(thumb));
     }
-    private static ThemeDto Map(MenuTheme theme) => new(theme.Preset, theme.PrimaryColor, theme.SecondaryColor, theme.BackgroundColor, theme.Style);
+    private static ThemeDto Map(MenuTheme theme) => new(theme.Preset, theme.PrimaryColor, theme.SecondaryColor, theme.BackgroundColor, theme.Style, theme.FontFamily, theme.CardLayout, theme.ImageStyle);
     private static DateTimeOffset PublicUpdatedAt(Menu menu) => menu.Store.UpdatedAt > menu.UpdatedAt ? menu.Store.UpdatedAt : menu.UpdatedAt;
     private string? Url(Domain.Stores.StoredFile? file) => file is null ? null : storage.GetPublicUrl(file.StorageKey);
     private Guid UserId() => currentUser.Id ?? throw new UnauthorizedAccessException("Autenticação necessária.");

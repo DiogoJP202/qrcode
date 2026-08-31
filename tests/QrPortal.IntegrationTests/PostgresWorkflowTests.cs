@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -54,6 +55,24 @@ public sealed class PostgresWorkflowTests
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Google_provider_is_only_exposed_when_credentials_are_configured()
+    {
+        const string connectionString = "Host=database.test;Database=qrportal;Username=tester;Password=test-password";
+        using var disabledFactory = new DatabaseApiFactory(connectionString);
+        using var enabledFactory = new DatabaseApiFactory(connectionString, enableGoogle: true);
+        var disabledClient = disabledFactory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
+        var enabledClient = enabledFactory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+
+        var disabled = await disabledClient.GetFromJsonAsync<AuthenticationProvidersDto>("/api/v1/auth/providers");
+        var start = await enabledClient.GetAsync("/api/v1/auth/google/start");
+
+        Assert.NotNull(disabled);
+        Assert.False(disabled.Google);
+        Assert.True(start.StatusCode == HttpStatusCode.Redirect, $"Resposta inesperada do início Google: {(int)start.StatusCode} {await start.Content.ReadAsStringAsync()}");
+        Assert.Equal("accounts.google.com", start.Headers.Location?.Host);
+    }
+
     [DockerFact]
     public async Task Registration_csrf_migrations_and_store_isolation_work_together()
     {
@@ -88,6 +107,17 @@ public sealed class PostgresWorkflowTests
         Assert.Equal(2, auditEvents.Count(eventName => eventName == "auth.registered"));
         Assert.Contains("store.created", auditEvents);
         Assert.Contains("authorization.denied", auditEvents);
+
+        var acceptances = await auditScope.ServiceProvider.GetRequiredService<ApplicationDbContext>().TermsAcceptances
+            .AsNoTracking()
+            .ToListAsync();
+        Assert.Equal(2, acceptances.Count);
+        Assert.All(acceptances, acceptance =>
+        {
+            Assert.Equal(LegalDocumentVersions.CurrentTerms, acceptance.TermsVersion);
+            Assert.Equal("203.0.113.42", acceptance.IpAddress);
+            Assert.True(DateTimeOffset.UtcNow - acceptance.AcceptedAt < TimeSpan.FromMinutes(1));
+        });
     }
 
     private static async Task<HttpClient> AuthenticatedClient(WebApplicationFactory<Program> factory, string email)
@@ -99,10 +129,11 @@ public sealed class PostgresWorkflowTests
 
         using var register = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/register")
         {
-            Content = JsonContent.Create(new RegisterRequest(email, "StrongPass123"))
+            Content = JsonContent.Create(new RegisterRequest("Usuário de Teste", "11999999999", email, "StrongPass123", true, LegalDocumentVersions.CurrentTerms))
         };
         register.Headers.Add("Cookie", antiforgeryCookie);
         register.Headers.Add("X-CSRF-TOKEN", anonymousToken);
+        register.Headers.Add("X-Forwarded-For", "203.0.113.42");
         var registered = await client.SendAsync(register);
         registered.EnsureSuccessStatusCode();
         var sessionCookie = Cookie(registered, "__Host-qrportal_session");
@@ -142,19 +173,28 @@ public sealed class PostgresWorkflowTests
 
 public sealed record CsrfResponse(string Token);
 
-public sealed class DatabaseApiFactory(string connectionString) : WebApplicationFactory<Program>
+public sealed class DatabaseApiFactory(string connectionString, bool enableGoogle = false) : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-        builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        builder.ConfigureAppConfiguration((_, configuration) =>
         {
+            var settings = new Dictionary<string, string?>
+            {
             ["ConnectionStrings:DefaultConnection"] = connectionString,
             ["AllowedHosts"] = "localhost;127.0.0.1",
             ["Frontend:Origin"] = "https://localhost",
             ["Storage:Provider"] = "Local",
             ["Storage:LocalRoot"] = Path.Combine(Path.GetTempPath(), "qrportal-postgres-tests")
-        }));
+            };
+            if (enableGoogle)
+            {
+                settings["Authentication:Google:ClientId"] = "test-client-id.apps.googleusercontent.com";
+                settings["Authentication:Google:ClientSecret"] = "test-client-secret";
+            }
+            configuration.AddInMemoryCollection(settings);
+        });
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<ApplicationDbContext>();
@@ -162,6 +202,14 @@ public sealed class DatabaseApiFactory(string connectionString) : WebApplication
             services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
             services.RemoveAll<ITransactionalEmailSender>();
             services.AddSingleton<ITransactionalEmailSender, NoOpEmailSender>();
+            if (enableGoogle)
+            {
+                services.AddAuthentication().AddGoogle(options =>
+                {
+                    options.ClientId = "test-client-id.apps.googleusercontent.com";
+                    options.ClientSecret = "test-client-secret";
+                });
+            }
         });
     }
 }

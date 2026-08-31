@@ -2,7 +2,15 @@ export interface UserSession {
   id: string;
   email: string;
   emailConfirmed: boolean;
+  fullName: string;
+  phoneNumber: string | null;
+  hasAcceptedCurrentTerms: boolean;
 }
+
+export interface RegistrationLocation { latitude?: number; longitude?: number; locationAccuracyMeters?: number; }
+export interface RegistrationRequest extends RegistrationLocation { fullName: string; phoneNumber: string; email: string; password: string; acceptTerms: boolean; termsVersion: string; }
+export interface ExternalRegistrationRequest extends RegistrationLocation { fullName: string; phoneNumber: string; acceptTerms: boolean; termsVersion: string; }
+export interface ExternalLoginPending { email: string; suggestedName: string | null; }
 
 export interface OnboardingState {
   step: "store" | "menu" | "category" | "product" | "appearance" | "complete";
@@ -22,6 +30,41 @@ export interface Store {
   description: string | null;
   logoUrl: string | null;
   role: string;
+  presentationHeadline: string | null;
+  presentationAbout: string | null;
+  contactPhone: string | null;
+  whatsApp: string | null;
+  contactEmail: string | null;
+  address: string | null;
+  businessHours: string | null;
+  websiteUrl: string | null;
+  instagramUrl: string | null;
+  presentationPrimaryColor: string;
+  presentationBackgroundColor: string;
+  presentationTextColor: string;
+  presentationStyle: "modern" | "classic" | "bold";
+  isPresentationPublished: boolean;
+}
+
+export interface PublicStore {
+  publicName: string;
+  slug: string;
+  logoUrl: string | null;
+  headline: string;
+  about: string;
+  contactPhone: string | null;
+  whatsApp: string | null;
+  contactEmail: string | null;
+  address: string | null;
+  businessHours: string | null;
+  websiteUrl: string | null;
+  instagramUrl: string | null;
+  primaryColor: string;
+  backgroundColor: string;
+  textColor: string;
+  style: "modern" | "classic" | "bold";
+  publishedMenuSlug: string | null;
+  updatedAt: string;
 }
 
 export interface Theme {
@@ -30,6 +73,9 @@ export interface Theme {
   secondaryColor: string;
   backgroundColor: string;
   style: "rounded" | "square" | "pill";
+  fontFamily: "sans" | "serif" | "rounded";
+  cardLayout: "grid" | "list";
+  imageStyle: "cover" | "contain";
 }
 
 export interface Product {

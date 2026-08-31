@@ -9,12 +9,14 @@ Não usar NgRx no MVP. Estado vindo do servidor fica em services por feature; ch
 ## Áreas
 
 - marketing: `/`, `/sobre`, `/como-funciona`, `/clientes`, `/planos`, `/contato`;
-- conta: `/login`, `/cadastro`, confirmação e recuperação;
-- privado: `/app`, cardápios, produtos, aparência, loja, conta e plano;
+- conta: `/login`, `/cadastro`, `/cadastro-google`, confirmação, recuperação e perfil do responsável;
+- legal: `/termos` e `/privacidade`, pré-renderizadas;
+- privado: `/app`, cardápios, produtos, aparência, apresentação do negócio, central de QR Codes, loja, conta e plano;
 - onboarding: `/app/onboarding` com retomada do passo incompleto;
-- público: `/m/:slug` e `/p/:productId`, lazy-loaded e mobile-first.
+- público: `/m/:slug`, `/p/:productId` e `/empresa/:slug`, lazy-loaded e mobile-first;
+- erros: páginas próprias para 403, 404, 500 e 503, com wildcard global em 404.
 
-Cards de produto são clicáveis e abrem uma rota individual estável, que também é o destino do QR Code PNG/SVG. O próximo ciclo público adicionará uma página de apresentação personalizável da empresa.
+Cards de produto são clicáveis e abrem uma rota individual estável, que também é o destino do QR Code PNG/SVG. A página do negócio reúne história, contatos, atendimento, links, identidade visual e acesso ao cardápio, e só fica pública após ação explícita do responsável.
 
 ## Design system
 

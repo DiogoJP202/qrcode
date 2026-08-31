@@ -18,12 +18,24 @@ Em `Development` e `E2E`, executados por HTTP local, os cookies usam nomes sem o
 
 ## Fluxos
 
-- cadastro local: e-mail + senha, envio de confirmação e acesso ao editor;
+- cadastro local: nome completo, telefone, e-mail, senha e aceite obrigatório da versão vigente dos Termos de Uso/Política de Privacidade;
+- a evidência de aceite guarda usuário, versão, instante UTC, IP observado pela API e, somente se o usuário optar e autorizar o navegador, coordenadas reduzidas para duas casas decimais;
 - publicação requer e-mail confirmado;
-- Google OAuth retorna à API e redireciona para o onboarding;
+- Google OAuth retorna à API; contas já existentes entram diretamente, enquanto novos usuários concluem nome, telefone e aceite em `/cadastro-google` antes da criação da conta;
 - recuperação usa token de uso limitado enviado por e-mail;
 - lockout: cinco falhas por 15 minutos;
 - autorização por política e membership de loja, nunca por ID isolado.
+
+## Google OAuth
+
+Configure `Authentication__Google__ClientId` e `Authentication__Google__ClientSecret` no ambiente da API. No Google Cloud Console, a URI de redirecionamento autorizada deve ser exatamente:
+
+```text
+http://localhost:5043/signin-google
+https://api.qrportal.com/signin-google
+```
+
+O primeiro endereço é apenas para desenvolvimento; produção exige HTTPS, tela de consentimento configurada e domínio autorizado. A sessão externa fica em cookie HttpOnly por até dez minutos e é removida ao concluir ou falhar definitivamente o fluxo. Segredos e dados pessoais nunca são incluídos na URL de retorno do frontend.
 
 ## E-mail
 

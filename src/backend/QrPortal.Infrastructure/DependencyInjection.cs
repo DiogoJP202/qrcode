@@ -52,6 +52,14 @@ public static class DependencyInjection
             options.Events.OnRedirectToLogin = context => { context.Response.StatusCode = 401; return Task.CompletedTask; };
             options.Events.OnRedirectToAccessDenied = context => { context.Response.StatusCode = 403; return Task.CompletedTask; };
         });
+        services.ConfigureExternalCookie(options =>
+        {
+            options.Cookie.Name = "__Host-qrportal_external";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
+            options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+            options.ExpireTimeSpan = TimeSpan.FromMinutes(10);
+        });
         services.Configure<DataProtectionTokenProviderOptions>(options => options.TokenLifespan = TimeSpan.FromHours(2));
         services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.FromMinutes(15));
 

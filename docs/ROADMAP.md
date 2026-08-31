@@ -41,12 +41,25 @@
 - detalhe público clicável para cada produto, com URL estável e compartilhável;
 - QR Code individual de produto com download PNG/SVG;
 
+## Cadastro, presença digital e compartilhamento — implementados
+
+- nome completo e telefone no cadastro/perfil;
+- aceite obrigatório e versionado dos Termos/Privacidade, com horário UTC, IP e localização regional opcional;
+- conclusão segura do cadastro iniciado pelo Google OAuth;
+- Termos de Uso, Política de Privacidade e páginas de erro 403/404/500/503;
+- página pública editável de apresentação do negócio, com contatos, história, cores e três composições;
+- personalização do cardápio por tipografia, grade/lista e encaixe das imagens;
+- central administrativa de QR Codes para cardápio, negócio e produtos, com preview, compartilhamento e download PNG/SVG.
+
 ## Próximo ciclo
 
 - integrar logs/alertas a um destino operacional e definir retenção dos registros de auditoria após escolher a infraestrutura de produção;
-- adicionar personalização segura de tipografia, capa, espaçamentos, layout e componentes, sem CSS arbitrário;
+- adicionar capa/galeria à página do negócio e controles seguros de espaçamento/componentes, sem CSS arbitrário;
 - implementar foto de perfil da conta com storage, processamento e remoção explícita;
-- criar página pública personalizável de apresentação do restaurante/empresa, separada do cardápio.
+- criar alteração de e-mail, exclusão/exportação de conta e fluxo de novo aceite quando a versão legal mudar;
+- concluir revisão jurídica, identificação formal do controlador e política operacional de retenção;
+- configurar credenciais reais/tela de consentimento do Google nos ambientes externos;
+- executar Lighthouse, backup/restauração, observabilidade externa e smoke de produção.
 
 ## Pós-MVP
 

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm --dir src/frontend/qrportal-web build",
+  "outputDirectory": "src/frontend/qrportal-web/dist/qrportal-web/browser",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://qrportal-api.onrender.com/api/:path*" },
+    { "source": "/files/:path*", "destination": "https://qrportal-api.onrender.com/files/:path*" },
+    { "source": "/((?!api/|files/).*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(self)" },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+        }
+      ]
+    }
+  ]
+}

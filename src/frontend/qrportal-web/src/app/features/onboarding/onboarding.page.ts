@@ -8,7 +8,7 @@ import { apiErrorMessage, ApiClient } from "../../core/api-client.service";
 import { AuthService } from "../../core/auth.service";
 import { Category, MenuDetails, Store, Theme } from "../../core/models";
 
-const defaultTheme: Theme = { preset: "green", primaryColor: "#16A34A", secondaryColor: "#0F172A", backgroundColor: "#FFFFFF", style: "rounded" };
+const defaultTheme: Theme = { preset: "green", primaryColor: "#16A34A", secondaryColor: "#0F172A", backgroundColor: "#FFFFFF", style: "rounded", fontFamily: "sans", cardLayout: "grid", imageStyle: "cover" };
 
 @Component({
   selector: "app-onboarding-page",
@@ -119,7 +119,7 @@ export class OnboardingPage {
     if (this.productForm.invalid || !this.menuId() || !this.categoryId()) { this.productForm.markAllAsTouched(); return; }
     this.run(this.api.http.post(this.api.url(`/menus/${this.menuId()}/products`), { categoryId: this.categoryId(), ...this.productForm.getRawValue(), promotionalPrice: null }), () => this.step.set(4));
   }
-  selectPreset(preset: typeof this.presets[number]): void { this.selectedPreset.set(preset.name); this.previewTheme.set({ preset: preset.name, primaryColor: preset.primary, secondaryColor: preset.secondary, backgroundColor: preset.background, style: "rounded" }); }
+  selectPreset(preset: typeof this.presets[number]): void { this.selectedPreset.set(preset.name); this.previewTheme.set({ ...this.previewTheme(), preset: preset.name, primaryColor: preset.primary, secondaryColor: preset.secondary, backgroundColor: preset.background }); }
   saveAppearance(): void { if (!this.menuId()) return; this.run(this.api.http.put<Theme>(this.api.url(`/menus/${this.menuId()}/theme`), this.previewTheme()), (theme) => { this.previewTheme.set(theme); this.step.set(5); }); }
   publish(): void { if (!this.menuId()) return; this.run(this.api.http.post<MenuDetails>(this.api.url(`/menus/${this.menuId()}/publish`), {}), (menu) => this.router.navigateByUrl(`/m/${menu.slug}`)); }
 

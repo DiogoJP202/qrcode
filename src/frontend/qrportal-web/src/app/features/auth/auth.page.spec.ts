@@ -1,4 +1,5 @@
 import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { ActivatedRoute, provideRouter } from "@angular/router";
 import { AuthPage } from "./auth.page";
@@ -9,14 +10,21 @@ describe("AuthPage", () => {
       imports: [AuthPage],
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { snapshot: { data: { mode: "register" } } } },
       ],
     }).compileComponents();
   });
 
-  it("rejects invalid email and weak password", () => {
+  function createPage(): AuthPage {
     const page = TestBed.createComponent(AuthPage).componentInstance;
+    TestBed.inject(HttpTestingController).expectOne("/api/v1/auth/providers").flush({ google: false });
+    return page;
+  }
+
+  it("rejects invalid email and weak password", () => {
+    const page = createPage();
     page.form.patchValue({ email: "not-an-email", password: "weak" });
 
     expect(page.form.invalid).toBe(true);
@@ -25,8 +33,14 @@ describe("AuthPage", () => {
   });
 
   it("accepts the password policy used by Identity", () => {
-    const page = TestBed.createComponent(AuthPage).componentInstance;
-    page.form.patchValue({ email: "owner@qrportal.test", password: "StrongPass123" });
+    const page = createPage();
+    page.form.patchValue({
+      fullName: "Usuário de Teste",
+      phoneNumber: "11999999999",
+      email: "owner@qrportal.test",
+      password: "StrongPass123",
+      acceptTerms: true,
+    });
 
     expect(page.form.valid).toBe(true);
   });

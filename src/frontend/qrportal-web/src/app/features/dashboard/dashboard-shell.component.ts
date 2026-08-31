@@ -36,7 +36,7 @@ import { BrandComponent } from "../../shared/brand.component";
         <header class="sticky top-0 z-30 flex h-17 items-center justify-between border-b border-slate-200 bg-white/90 px-5 backdrop-blur lg:px-8">
           <button class="grid size-10 place-items-center rounded-xl border border-slate-200 lg:hidden" (click)="mobileOpen.set(true)" aria-label="Abrir menu"><svg lucideMenu size="20"></svg></button>
           <p class="hidden text-sm font-semibold text-slate-500 sm:block">Gerencie seu negócio em um só lugar</p>
-          <div class="flex items-center gap-3"><div class="hidden text-right sm:block"><p class="max-w-48 truncate text-sm font-extrabold">{{ auth.user()?.email }}</p><p class="text-xs text-slate-400">Administrador</p></div><span class="grid size-10 place-items-center rounded-full bg-brand-100 font-extrabold text-brand-800">{{ initial }}</span></div>
+          <div class="flex items-center gap-3"><div class="hidden text-right sm:block"><p class="max-w-48 truncate text-sm font-extrabold">{{ auth.user()?.fullName || auth.user()?.email }}</p><p class="text-xs text-slate-400">Administrador</p></div><span class="grid size-10 place-items-center rounded-full bg-brand-100 font-extrabold text-brand-800">{{ initial }}</span></div>
         </header>
         <main class="p-4 sm:p-6 lg:p-8"><router-outlet /></main>
       </section>
@@ -47,15 +47,15 @@ export class DashboardShellComponent {
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   readonly mobileOpen = signal(false);
-  readonly initial = this.auth.user()?.email?.[0]?.toUpperCase() ?? "Q";
+  readonly initial = (this.auth.user()?.fullName || this.auth.user()?.email)?.[0]?.toUpperCase() ?? "Q";
   readonly nav = [
     { label: "Visão geral", link: "/app", exact: true, icon: "dashboard" },
     { label: "Cardápios", link: "/app/editor", tab: "menu", icon: "store" },
     { label: "Produtos", link: "/app/editor", tab: "products", icon: "package" },
     { label: "Aparência", link: "/app/editor", tab: "appearance", icon: "palette" },
-    { label: "QR Code", link: "/app/editor", tab: "qrcode", icon: "qrcode" },
-    { label: "Loja", link: "/app/editor", tab: "store", icon: "settings" },
-    { label: "Conta", link: "/app/editor", tab: "account", icon: "account" },
+    { label: "QR Codes", link: "/app/qr-codes", icon: "qrcode" },
+    { label: "Apresentação", link: "/app/negocio", icon: "settings" },
+    { label: "Conta", link: "/app/conta", icon: "account" },
     { label: "Plano", link: "/app/editor", tab: "plan", icon: "plan" },
   ];
 

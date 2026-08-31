@@ -12,8 +12,11 @@ test("cadastro até cardápio público", async ({ page }) => {
   const storeName = `Bistrô E2E ${unique}`;
 
   await page.goto("/cadastro");
+  await page.getByPlaceholder("Seu nome e sobrenome").fill("Responsável E2E");
+  await page.getByPlaceholder("(11) 99999-9999").fill("11999999999");
   await page.getByPlaceholder("voce@negocio.com").fill(`owner-${unique}@qrportal.test`);
   await page.getByPlaceholder("Mínimo de 10 caracteres").fill("StrongPass123");
+  await page.getByRole("checkbox", { name: /Li e aceito/ }).check();
 
   const registrationResponse = page.waitForResponse((response) =>
     response.url().endsWith("/api/v1/auth/register") && response.request().method() === "POST",
@@ -94,6 +97,22 @@ test("cadastro até cardápio público", async ({ page }) => {
   expect((await download).suggestedFilename()).toMatch(/^qr-[0-9a-f]{32}\.png$/);
   await page.getByRole("link", { name: "Cardápio" }).click();
   await expect(page).toHaveURL(publicUrl);
+
+  await page.goto("/app/negocio");
+  await page.getByPlaceholder("Comida feita com afeto, todos os dias.").fill("Sabores que contam nossa história");
+  await page.getByPlaceholder("Conte sua história, especialidades e propósito.").fill("Um bistrô de bairro com ingredientes locais e atendimento próximo.");
+  await page.getByRole("checkbox", { name: /Publicar página do negócio/ }).check();
+  await page.getByRole("button", { name: "Salvar página" }).click();
+  await expect(page.getByText("Página salva e publicada.")).toBeVisible();
+
+  const businessUrl = new URL(publicUrl);
+  businessUrl.pathname = `/empresa/${businessUrl.pathname.split("/").pop()}`;
+  await page.goto(businessUrl.toString());
+  await expect(page.getByRole("heading", { name: "Sabores que contam nossa história" })).toBeVisible();
+
+  await page.goto("/app/qr-codes");
+  await expect(page.getByRole("heading", { name: "Central de QR Codes" })).toBeVisible();
+  await expect(page.getByRole("img", { name: /QR Code para/ })).toBeVisible();
 });
 
 test("landing e login permanecem utilizáveis em 375 px", async ({ page }) => {
@@ -103,4 +122,6 @@ test("landing e login permanecem utilizáveis em 375 px", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Abrir menu" })).toBeVisible();
   await page.goto("/login");
   await expect(page.getByRole("heading", { name: "Entre na sua conta" })).toBeVisible();
+  await page.goto("/endereco-que-nao-existe");
+  await expect(page.getByRole("heading", { name: /Este endereço não existe/ })).toBeVisible();
 });

@@ -1,8 +1,8 @@
 import { Injectable, signal } from "@angular/core";
 import { catchError, map, Observable, of, shareReplay, tap } from "rxjs";
 import { ApiClient } from "./api-client.service";
-import { MeResponse, OnboardingState, UserSession } from "./models";
-import type { LoginRequest, RegisterRequest } from "./generated";
+import { ExternalRegistrationRequest, MeResponse, OnboardingState, RegistrationRequest, UserSession } from "./models";
+import type { LoginRequest } from "./generated";
 
 @Injectable({ providedIn: "root" })
 export class AuthService {
@@ -37,9 +37,20 @@ export class AuthService {
     );
   }
 
-  register(email: string, password: string): Observable<UserSession> {
-    const request: RegisterRequest = { email, password };
+  register(request: RegistrationRequest): Observable<UserSession> {
     return this.api.http.post<UserSession>(this.api.url("/auth/register"), request).pipe(
+      tap((user) => this.user.set(user)),
+    );
+  }
+
+  completeGoogleRegistration(request: ExternalRegistrationRequest): Observable<UserSession> {
+    return this.api.http.post<UserSession>(this.api.url("/auth/google/register"), request).pipe(
+      tap((user) => this.user.set(user)),
+    );
+  }
+
+  updateProfile(fullName: string, phoneNumber: string): Observable<UserSession> {
+    return this.api.http.patch<UserSession>(this.api.url("/me"), { fullName, phoneNumber }).pipe(
       tap((user) => this.user.set(user)),
     );
   }

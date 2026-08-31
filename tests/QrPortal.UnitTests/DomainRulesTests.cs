@@ -1,5 +1,7 @@
 using QrPortal.Domain.Common;
+using QrPortal.Domain.Identity;
 using QrPortal.Domain.Menus;
+using QrPortal.Domain.Stores;
 
 namespace QrPortal.UnitTests;
 
@@ -66,10 +68,71 @@ public sealed class DomainRulesTests
     {
         var theme = MenuTheme.CreateDefault(Guid.CreateVersion7());
 
-        theme.Update("dark", "#aabbcc", "#123456", "#ffffff", "rounded");
+        theme.Update("dark", "#aabbcc", "#123456", "#ffffff", "rounded", "serif", "list", "contain");
 
         Assert.Equal("#AABBCC", theme.PrimaryColor);
         Assert.Equal("#FFFFFF", theme.BackgroundColor);
+        Assert.Equal("serif", theme.FontFamily);
+        Assert.Equal("list", theme.CardLayout);
+        Assert.Equal("contain", theme.ImageStyle);
+    }
+
+    [Fact]
+    public void Terms_acceptance_minimizes_optional_location_precision()
+    {
+        var acceptance = new TermsAcceptance(
+            Guid.CreateVersion7(),
+            "2026-08-31",
+            "203.0.113.42",
+            -23.550520m,
+            -46.633308m,
+            127.6m);
+
+        Assert.Equal(-23.55m, acceptance.Latitude);
+        Assert.Equal(-46.63m, acceptance.Longitude);
+        Assert.Equal(128m, acceptance.AccuracyMeters);
+        Assert.Equal("203.0.113.42", acceptance.IpAddress);
+        Assert.True(DateTimeOffset.UtcNow - acceptance.AcceptedAt < TimeSpan.FromSeconds(2));
+    }
+
+    [Theory]
+    [InlineData(-91, 0)]
+    [InlineData(91, 0)]
+    [InlineData(0, -181)]
+    [InlineData(0, 181)]
+    public void Terms_acceptance_rejects_invalid_location(decimal latitude, decimal longitude)
+        => Assert.Throws<DomainException>(() => new TermsAcceptance(Guid.CreateVersion7(), "2026-08-31", null, latitude, longitude, null));
+
+    [Fact]
+    public void Business_presentation_requires_content_before_publication()
+    {
+        var store = new Store(Guid.CreateVersion7(), "Casa Manjericão", "casa-manjericao");
+
+        Assert.Throws<DomainException>(() => store.SetPresentation(
+            null, null, null, null, null, null, null, null, null,
+            "#16a34a", "#f8fafc", "#0f172a", "modern", isPublished: true));
+    }
+
+    [Fact]
+    public void Business_presentation_normalizes_safe_customization()
+    {
+        var store = new Store(Guid.CreateVersion7(), "Casa Manjericão", "casa-manjericao");
+
+        store.SetPresentation(
+            "A cozinha do bairro",
+            "Ingredientes locais e receitas da família.",
+            "(11) 3333-4444",
+            "5511999999999",
+            "contato@exemplo.com",
+            "Rua das Flores, 10",
+            "Segunda a sábado, 11h às 22h",
+            "https://exemplo.com",
+            "https://instagram.com/exemplo",
+            "#16a34a", "#f8fafc", "#0f172a", "classic", isPublished: true);
+
+        Assert.True(store.IsPresentationPublished);
+        Assert.Equal("#16A34A", store.PresentationPrimaryColor);
+        Assert.Equal("classic", store.PresentationStyle);
     }
 
     private static Menu MenuWithAvailableProduct()

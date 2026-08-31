@@ -12,7 +12,10 @@ public interface IIdentityService
     Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken);
     Task<OperationResult> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken);
     Task<UserSessionDto?> GetCurrentAsync(CancellationToken cancellationToken);
-    Task<OperationResult<UserSessionDto>> CompleteExternalLoginAsync(ClaimsPrincipal principal, CancellationToken cancellationToken);
+    Task<OperationResult<UserSessionDto>> UpdateProfileAsync(UpdateProfileRequest request, CancellationToken cancellationToken);
+    Task<OperationResult<UserSessionDto>> LoginExternalAsync(ClaimsPrincipal principal, CancellationToken cancellationToken);
+    Task<OperationResult<UserSessionDto>> RegisterExternalAsync(ClaimsPrincipal principal, ExternalRegistrationRequest request, CancellationToken cancellationToken);
+    ExternalLoginPendingDto? GetPendingExternal(ClaimsPrincipal principal);
 }
 
 public interface IStoreService
@@ -21,6 +24,8 @@ public interface IStoreService
     Task<StoreDto> GetAsync(Guid storeId, CancellationToken cancellationToken);
     Task<StoreDto> CreateAsync(CreateStoreRequest request, CancellationToken cancellationToken);
     Task<StoreDto> UpdateAsync(Guid storeId, UpdateStoreRequest request, CancellationToken cancellationToken);
+    Task<StoreDto> UpdatePresentationAsync(Guid storeId, UpdateStorePresentationRequest request, CancellationToken cancellationToken);
+    Task<PublicStoreDto?> GetPublicAsync(string slug, CancellationToken cancellationToken);
     Task<OnboardingDto> GetOnboardingAsync(CancellationToken cancellationToken);
 }
 

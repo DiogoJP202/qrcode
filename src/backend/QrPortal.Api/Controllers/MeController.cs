@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QrPortal.Application.Abstractions;
+using QrPortal.Application.Contracts;
 
 namespace QrPortal.Api.Controllers;
 
@@ -16,4 +17,8 @@ public sealed class MeController(IIdentityService identity, IStoreService stores
         var onboarding = await stores.GetOnboardingAsync(cancellationToken);
         return Ok(new { user, onboarding });
     }
+
+    [HttpPatch]
+    public async Task<ActionResult<UserSessionDto>> Update(UpdateProfileRequest request, CancellationToken cancellationToken)
+        => FromResult(await identity.UpdateProfileAsync(request, cancellationToken));
 }

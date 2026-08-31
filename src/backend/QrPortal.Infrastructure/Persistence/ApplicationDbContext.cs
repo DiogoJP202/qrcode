@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using QrPortal.Domain.Common;
+using QrPortal.Domain.Identity;
 using QrPortal.Domain.Menus;
 using QrPortal.Domain.Plans;
 using QrPortal.Domain.Stores;
@@ -23,6 +24,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<Plan> Plans => Set<Plan>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<TermsAcceptance> TermsAcceptances => Set<TermsAcceptance>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -31,6 +33,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
         builder.Entity<ApplicationUser>(entity =>
         {
+            entity.Property(user => user.FullName).HasMaxLength(150).IsRequired();
             entity.Property(user => user.CreatedAt).HasColumnType("timestamptz");
             entity.Property(user => user.UpdatedAt).HasColumnType("timestamptz");
         });
@@ -42,6 +45,19 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.Property(store => store.PublicName).HasMaxLength(120).IsRequired();
             entity.Property(store => store.Slug).HasColumnType("citext").HasMaxLength(80).IsRequired();
             entity.Property(store => store.Description).HasMaxLength(500);
+            entity.Property(store => store.PresentationHeadline).HasMaxLength(160);
+            entity.Property(store => store.PresentationAbout).HasMaxLength(2000);
+            entity.Property(store => store.ContactPhone).HasMaxLength(30);
+            entity.Property(store => store.WhatsApp).HasMaxLength(30);
+            entity.Property(store => store.ContactEmail).HasMaxLength(254);
+            entity.Property(store => store.Address).HasMaxLength(300);
+            entity.Property(store => store.BusinessHours).HasMaxLength(500);
+            entity.Property(store => store.WebsiteUrl).HasMaxLength(300);
+            entity.Property(store => store.InstagramUrl).HasMaxLength(300);
+            entity.Property(store => store.PresentationPrimaryColor).HasMaxLength(7).HasDefaultValue("#16A34A");
+            entity.Property(store => store.PresentationBackgroundColor).HasMaxLength(7).HasDefaultValue("#F8FAFC");
+            entity.Property(store => store.PresentationTextColor).HasMaxLength(7).HasDefaultValue("#0F172A");
+            entity.Property(store => store.PresentationStyle).HasMaxLength(16).HasDefaultValue("modern");
             entity.HasIndex(store => store.Slug).IsUnique();
             entity.HasOne(store => store.LogoFile).WithMany().HasForeignKey(store => store.LogoFileId).OnDelete(DeleteBehavior.SetNull);
         });
@@ -127,6 +143,9 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.Property(theme => theme.SecondaryColor).HasMaxLength(7);
             entity.Property(theme => theme.BackgroundColor).HasMaxLength(7);
             entity.Property(theme => theme.Style).HasMaxLength(16);
+            entity.Property(theme => theme.FontFamily).HasMaxLength(16).HasDefaultValue("sans");
+            entity.Property(theme => theme.CardLayout).HasMaxLength(16).HasDefaultValue("grid");
+            entity.Property(theme => theme.ImageStyle).HasMaxLength(16).HasDefaultValue("cover");
             entity.HasOne(theme => theme.Menu).WithOne(menu => menu.Theme).HasForeignKey<MenuTheme>(theme => theme.MenuId);
         });
 
@@ -168,6 +187,20 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entity.Property(log => log.CorrelationId).HasMaxLength(100);
             entity.HasIndex(log => new { log.ResourceType, log.ResourceId });
             entity.HasIndex(log => log.CreatedAt);
+        });
+
+        builder.Entity<TermsAcceptance>(entity =>
+        {
+            entity.ToTable("TermsAcceptances");
+            entity.HasKey(acceptance => acceptance.Id);
+            entity.Property(acceptance => acceptance.TermsVersion).HasMaxLength(32).IsRequired();
+            entity.Property(acceptance => acceptance.AcceptedAt).HasColumnType("timestamptz");
+            entity.Property(acceptance => acceptance.IpAddress).HasMaxLength(45);
+            entity.Property(acceptance => acceptance.Latitude).HasPrecision(6, 3);
+            entity.Property(acceptance => acceptance.Longitude).HasPrecision(6, 3);
+            entity.Property(acceptance => acceptance.AccuracyMeters).HasPrecision(8, 0);
+            entity.HasIndex(acceptance => new { acceptance.UserId, acceptance.TermsVersion }).IsUnique();
+            entity.HasOne<ApplicationUser>().WithMany().HasForeignKey(acceptance => acceptance.UserId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 

@@ -26,6 +26,10 @@ public sealed class StoresController(IStoreService stores, IMenuService menus, I
     [HttpPatch("{storeId:guid}")]
     public Task<StoreDto> Update(Guid storeId, UpdateStoreRequest request, CancellationToken cancellationToken) => stores.UpdateAsync(storeId, request, cancellationToken);
 
+    [HttpPatch("{storeId:guid}/presentation")]
+    public Task<StoreDto> UpdatePresentation(Guid storeId, UpdateStorePresentationRequest request, CancellationToken cancellationToken)
+        => stores.UpdatePresentationAsync(storeId, request, cancellationToken);
+
     [HttpGet("{storeId:guid}/menus")]
     public Task<PagedResult<MenuSummaryDto>> Menus(Guid storeId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default) => menus.ListAsync(storeId, page, pageSize, cancellationToken);
 

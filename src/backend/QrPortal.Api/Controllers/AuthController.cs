@@ -23,6 +23,16 @@ public sealed class AuthController(IIdentityService identity, IAntiforgery antif
         return Ok(new { token = tokens.RequestToken });
     }
 
+    [HttpGet("providers")]
+    [AllowAnonymous]
+    public ActionResult<AuthenticationProvidersDto> Providers()
+    {
+        var configuration = HttpContext.RequestServices.GetRequiredService<IConfiguration>();
+        var google = !string.IsNullOrWhiteSpace(configuration["Authentication:Google:ClientId"])
+            && !string.IsNullOrWhiteSpace(configuration["Authentication:Google:ClientSecret"]);
+        return Ok(new AuthenticationProvidersDto(google));
+    }
+
     [HttpPost("register")]
     [AllowAnonymous]
     [EnableRateLimiting("auth")]
@@ -82,8 +92,40 @@ public sealed class AuthController(IIdentityService identity, IAntiforgery antif
     {
         var external = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
         if (!external.Succeeded || external.Principal is null) return Redirect($"{frontend.Value.PublicBaseUrl}/login?error=google");
-        var result = await identity.CompleteExternalLoginAsync(external.Principal, cancellationToken);
+        var result = await identity.LoginExternalAsync(external.Principal, cancellationToken);
+        if (result.Succeeded)
+        {
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+            return Redirect($"{frontend.Value.PublicBaseUrl}/app");
+        }
+        if (result.Code == "external_registration_required")
+            return Redirect($"{frontend.Value.PublicBaseUrl}/cadastro-google");
+
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-        return Redirect(result.Succeeded ? $"{frontend.Value.PublicBaseUrl}/app" : $"{frontend.Value.PublicBaseUrl}/login?error=google");
+        return Redirect($"{frontend.Value.PublicBaseUrl}/login?error=google");
+    }
+
+    [HttpGet("google/pending")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ExternalLoginPendingDto>> GooglePending()
+    {
+        var external = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
+        if (!external.Succeeded || external.Principal is null) return Unauthorized();
+        var pending = identity.GetPendingExternal(external.Principal);
+        return pending is null ? Unauthorized() : Ok(pending);
+    }
+
+    [HttpPost("google/register")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth")]
+    public async Task<ActionResult<UserSessionDto>> GoogleRegister(ExternalRegistrationRequest request, CancellationToken cancellationToken)
+    {
+        var external = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
+        if (!external.Succeeded || external.Principal is null)
+            return ApiProblem("external_login_expired", ["A sessão do Google expirou. Comece novamente."], 401);
+
+        var result = await identity.RegisterExternalAsync(external.Principal, request, cancellationToken);
+        if (result.Succeeded) await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        return FromResult(result);
     }
 }

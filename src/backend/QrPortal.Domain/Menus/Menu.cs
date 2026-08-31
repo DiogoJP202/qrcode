@@ -170,16 +170,22 @@ public sealed partial class MenuTheme : Entity
     public string SecondaryColor { get; private set; } = "#0F172A";
     public string BackgroundColor { get; private set; } = "#FFFFFF";
     public string Style { get; private set; } = "rounded";
+    public string FontFamily { get; private set; } = "sans";
+    public string CardLayout { get; private set; } = "grid";
+    public string ImageStyle { get; private set; } = "cover";
 
     public static MenuTheme CreateDefault(Guid menuId) => new(menuId);
 
-    public void Update(string preset, string primaryColor, string secondaryColor, string backgroundColor, string style)
+    public void Update(string preset, string primaryColor, string secondaryColor, string backgroundColor, string style, string fontFamily, string cardLayout, string imageStyle)
     {
         Preset = preset.Trim().ToLowerInvariant();
         PrimaryColor = Color(primaryColor);
         SecondaryColor = Color(secondaryColor);
         BackgroundColor = Color(backgroundColor);
         Style = style is "rounded" or "square" or "pill" ? style : throw new DomainException("Estilo inválido.");
+        FontFamily = fontFamily is "sans" or "serif" or "rounded" ? fontFamily : throw new DomainException("Tipografia inválida.");
+        CardLayout = cardLayout is "grid" or "list" ? cardLayout : throw new DomainException("Layout de produtos inválido.");
+        ImageStyle = imageStyle is "cover" or "contain" ? imageStyle : throw new DomainException("Estilo de imagem inválido.");
         Touch();
     }
 

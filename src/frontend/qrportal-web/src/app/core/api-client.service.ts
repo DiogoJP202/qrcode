@@ -4,9 +4,10 @@ import { ApiProblem } from "./models";
 
 @Injectable({ providedIn: "root" })
 export class ApiClient {
-  readonly baseUrl = location.hostname === "localhost" || location.hostname === "127.0.0.1"
-    ? "/api/v1"
-    : "https://api.qrportal.com/api/v1";
+  // A API é sempre consumida na mesma origem do frontend: em desenvolvimento pelo
+  // proxy.conf.json e em produção pelo rewrite da hospedagem. Manter o caminho relativo
+  // preserva os cookies HttpOnly `SameSite=Lax`, que não seriam enviados entre sites.
+  readonly baseUrl = "/api/v1";
 
   constructor(readonly http: HttpClient) {}
 

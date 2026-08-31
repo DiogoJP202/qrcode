@@ -77,6 +77,11 @@ if (!useSecureCookies)
         options.Cookie.Name = "qrportal_session_local";
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     });
+    builder.Services.ConfigureExternalCookie(options =>
+    {
+        options.Cookie.Name = "qrportal_external_local";
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    });
 }
 var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
 if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
@@ -140,6 +145,8 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
     {
         options.ClientId = googleClientId;
         options.ClientSecret = googleClientSecret;
+        options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+        options.CorrelationCookie.SecurePolicy = useSecureCookies ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
     });
 }
 
@@ -186,7 +193,10 @@ if (app.Environment.IsDevelopment())
 if (!app.Environment.IsDevelopment() && !isE2E)
 {
     app.UseHsts();
-    app.UseHttpsRedirection();
+    // Plataformas gerenciadas encerram o TLS na borda e entregam HTTP ao container. Como só
+    // confiamos em proxies declarados, `Request.IsHttps` seria falso e o redirecionamento
+    // entraria em laço. Declarar a terminação upstream é explícito e não amplia a confiança.
+    if (!app.Configuration.GetValue<bool>("ReverseProxy:TlsTerminatedUpstream")) app.UseHttpsRedirection();
 }
 app.UseCors("frontend");
 app.UseRateLimiter();

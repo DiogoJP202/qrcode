@@ -2,26 +2,26 @@ using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Options;
 using QrPortal.Application.Abstractions;
 using QrPortal.Application.Contracts;
 using QrPortal.Infrastructure.Configuration;
-using Microsoft.Extensions.Options;
 
 namespace QrPortal.Api.Controllers;
 
-[Route("api/v1/public/menus")]
-public sealed class PublicMenusController(IMenuService menus, IQrCodeService qrCodes, IOptions<FrontendOptions> frontendOptions) : ApiControllerBase
+[Route("api/v1/public/stores")]
+public sealed class PublicStoresController(IStoreService stores, IQrCodeService qrCodes, IOptions<FrontendOptions> frontendOptions) : ApiControllerBase
 {
     [HttpGet("{slug}")]
     [AllowAnonymous]
     [EnableRateLimiting("public-menu")]
-    public async Task<ActionResult<PublicMenuDto>> Get(string slug, CancellationToken cancellationToken)
+    public async Task<ActionResult<PublicStoreDto>> Get(string slug, CancellationToken cancellationToken)
     {
-        var menu = await menus.GetPublicAsync(slug, cancellationToken);
-        if (menu is null) return NotFound();
-        SetPublicCache(menu.UpdatedAt);
+        var store = await stores.GetPublicAsync(slug, cancellationToken);
+        if (store is null) return NotFound();
+        SetPublicCache(store.UpdatedAt);
         if (Request.Headers.IfNoneMatch == Response.Headers.ETag) return StatusCode(StatusCodes.Status304NotModified);
-        return Ok(menu);
+        return Ok(store);
     }
 
     [HttpGet("{slug}/qr.{format:regex(^(svg|png)$)}")]
@@ -29,11 +29,11 @@ public sealed class PublicMenusController(IMenuService menus, IQrCodeService qrC
     [EnableRateLimiting("public-menu")]
     public async Task<IActionResult> GetQr(string slug, string format, [FromQuery] bool download, CancellationToken cancellationToken)
     {
-        var menu = await menus.GetPublicAsync(slug, cancellationToken);
-        if (menu is null) return NotFound();
-        var url = $"{frontendOptions.Value.PublicBaseUrl.TrimEnd('/')}/m/{menu.Slug}";
-        SetPublicCache(menu.UpdatedAt);
-        var fileName = $"qr-cardapio-{menu.Slug}.{format}";
+        var store = await stores.GetPublicAsync(slug, cancellationToken);
+        if (store is null) return NotFound();
+        var url = $"{frontendOptions.Value.PublicBaseUrl.TrimEnd('/')}/empresa/{store.Slug}";
+        SetPublicCache(store.UpdatedAt);
+        var fileName = $"qr-negocio-{store.Slug}.{format}";
         if (format.Equals("png", StringComparison.OrdinalIgnoreCase))
         {
             var content = qrCodes.GeneratePng(url);

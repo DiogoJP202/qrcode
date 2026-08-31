@@ -61,6 +61,63 @@ public sealed class StoreService(ApplicationDbContext db, ICurrentUser currentUs
         return Map(member.Store, member.Role.ToString());
     }
 
+    public async Task<StoreDto> UpdatePresentationAsync(Guid storeId, UpdateStorePresentationRequest request, CancellationToken cancellationToken)
+    {
+        var member = await AuthorizedMember(storeId, cancellationToken);
+        member.Store.SetPresentation(
+            request.Headline,
+            request.About,
+            request.ContactPhone,
+            request.WhatsApp,
+            request.ContactEmail,
+            request.Address,
+            request.BusinessHours,
+            request.WebsiteUrl,
+            request.InstagramUrl,
+            request.PrimaryColor,
+            request.BackgroundColor,
+            request.TextColor,
+            request.Style,
+            request.IsPublished);
+        db.AuditLogs.Add(new AuditLog(UserId(), "store.presentation_updated", nameof(Store), storeId, CorrelationId()));
+        await db.SaveChangesAsync(cancellationToken);
+        return Map(member.Store, member.Role.ToString());
+    }
+
+    public async Task<PublicStoreDto?> GetPublicAsync(string slug, CancellationToken cancellationToken)
+    {
+        var normalized = Domain.Common.Slug.Normalize(slug);
+        var store = await db.Stores.AsNoTracking()
+            .Include(item => item.LogoFile)
+            .Include(item => item.Menus)
+            .SingleOrDefaultAsync(item => item.Slug == normalized && item.IsPresentationPublished, cancellationToken);
+        if (store is null) return null;
+        var menuSlug = store.Menus
+            .Where(menu => menu.Status == Domain.Menus.MenuStatus.Published)
+            .OrderBy(menu => menu.CreatedAt)
+            .Select(menu => menu.Slug)
+            .FirstOrDefault();
+        return new PublicStoreDto(
+            store.PublicName,
+            store.Slug,
+            store.LogoFile is null ? null : storage.GetPublicUrl(store.LogoFile.StorageKey),
+            store.PresentationHeadline!,
+            store.PresentationAbout!,
+            store.ContactPhone,
+            store.WhatsApp,
+            store.ContactEmail,
+            store.Address,
+            store.BusinessHours,
+            store.WebsiteUrl,
+            store.InstagramUrl,
+            store.PresentationPrimaryColor,
+            store.PresentationBackgroundColor,
+            store.PresentationTextColor,
+            store.PresentationStyle,
+            menuSlug,
+            store.UpdatedAt);
+    }
+
     public async Task<OnboardingDto> GetOnboardingAsync(CancellationToken cancellationToken)
     {
         var userId = UserId();
@@ -86,5 +143,25 @@ public sealed class StoreService(ApplicationDbContext db, ICurrentUser currentUs
 
     private Guid UserId() => currentUser.Id ?? throw new UnauthorizedAccessException("Autenticação necessária.");
     private string CorrelationId() => httpContextAccessor.HttpContext?.TraceIdentifier ?? Guid.CreateVersion7().ToString("N");
-    private StoreDto Map(Store store, string role) => new(store.Id, store.PublicName, store.Slug, store.Description, store.LogoFile is null ? null : storage.GetPublicUrl(store.LogoFile.StorageKey), role);
+    private StoreDto Map(Store store, string role) => new(
+        store.Id,
+        store.PublicName,
+        store.Slug,
+        store.Description,
+        store.LogoFile is null ? null : storage.GetPublicUrl(store.LogoFile.StorageKey),
+        role,
+        store.PresentationHeadline,
+        store.PresentationAbout,
+        store.ContactPhone,
+        store.WhatsApp,
+        store.ContactEmail,
+        store.Address,
+        store.BusinessHours,
+        store.WebsiteUrl,
+        store.InstagramUrl,
+        store.PresentationPrimaryColor,
+        store.PresentationBackgroundColor,
+        store.PresentationTextColor,
+        store.PresentationStyle,
+        store.IsPresentationPublished);
 }

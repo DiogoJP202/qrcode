@@ -35,3 +35,9 @@
 `AuditLogs` registra somente ator, nome do evento, tipo/ID do recurso, horário UTC e correlation ID. O MVP cobre cadastro, login e falha, lockout, logout, confirmação de e-mail, recuperação de senha, OAuth, falha de autorização, publicação/arquivamento, alterações do catálogo, tema, logo e imagem de produto. Senhas, tokens, e-mails, IPs e conteúdo das mudanças não entram no registro.
 
 O rate limiter registra rejeições sem IP ou parâmetros. IP é usado apenas em memória como chave de limitação para tráfego anônimo e deve permanecer confiável somente quando vier de um proxy explicitamente permitido.
+
+## Evidência de aceite e privacidade
+
+`TermsAcceptances` é separado de `AuditLogs` e registra uma evidência versionada de cadastro. O IP é obtido exclusivamente de `RemoteIpAddress` após `UseForwardedHeaders`; cabeçalhos vindos de proxies não cadastrados não são confiados. A localização é opt-in, não bloqueia o cadastro e é arredondada para duas casas decimais antes da persistência. Nunca solicitar localização silenciosamente.
+
+Antes do lançamento público, a Política de Privacidade e os Termos precisam de revisão jurídica e da identificação formal do controlador (razão social, CNPJ/endereço e canal do encarregado, conforme aplicável), além de prazos operacionais de retenção, exclusão e atendimento aos titulares.

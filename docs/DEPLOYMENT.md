@@ -29,6 +29,8 @@ Documentar e fornecer exemplos para connection string, frontend origin, domínio
 
 O `.env` raiz é carregado automaticamente apenas em `Development`. Para Neon Object Storage, são aceitas as variáveis AWS geradas pelo serviço e as adicionais `AWS_S3_BUCKET` e `AWS_S3_PUBLIC_URL`. Produção deve fornecer os mesmos valores pelo gerenciador de secrets da plataforma, não por arquivo versionado.
 
+No Google Cloud Console, cadastre `http://localhost:5043/signin-google` para desenvolvimento e `https://api.qrportal.com/signin-google` para produção. O Client ID e o Client Secret pertencem somente ao ambiente da API. Validar também a tela de consentimento, os domínios autorizados e o e-mail de suporte antes do smoke test.
+
 O repositório inclui `src/backend/QrPortal.Api/Dockerfile` e `src/frontend/qrportal-web/Dockerfile`. A API roda como usuário não-root na porta 8080; o container web usa Nginx com fallback do Angular e headers de segurança. Antes do deploy:
 
 ```text
@@ -44,3 +46,18 @@ O proxy reverso deve encaminhar `X-Forwarded-For` e `X-Forwarded-Proto`. A API p
 ## Rollback
 
 Deploy da API mantém a versão anterior disponível. Migrations destrutivas exigem expansão/contração em releases separadas. Frontend é revertido por artefato imutável.
+
+## Ambiente de demonstração (Render + Vercel)
+
+Topologia validada para mostrar o produto sem infraestrutura própria: API em container no Render, frontend estático na Vercel, banco Neon e storage S3 já existentes. O repositório traz `render.yaml` e `vercel.json` com essa configuração.
+
+O frontend **não** chama a API por domínio absoluto. `ApiClient.baseUrl` é o caminho relativo `/api/v1`, e a Vercel reescreve `/api/*` para o serviço do Render. Isso é obrigatório, não uma conveniência: os cookies de sessão e antiforgery usam `SameSite=Lax` com prefixo `__Host-`, e o navegador não os enviaria de `*.vercel.app` para `*.onrender.com`, que são sites diferentes. Ao trocar a URL da API, ajuste o `destination` dos rewrites em `vercel.json`.
+
+`ReverseProxy__TlsTerminatedUpstream=true` é necessário sempre que a plataforma encerrar o TLS antes do container. Sem essa flag, `Request.IsHttps` é falso — os cabeçalhos encaminhados só são aceitos de proxies declarados — e `UseHttpsRedirection` entra em laço de redirecionamento. A flag não amplia a confiança em proxies; apenas declara que o TLS já foi tratado na borda.
+
+Limitações conhecidas deste ambiente, aceitáveis para demonstração e não para produção:
+
+- o IP gravado na evidência de aceite e nas partições de rate limit é o do proxy, não o do visitante, porque `ReverseProxy__KnownProxies` não inclui os endereços dinâmicos das plataformas. Os limites `auth` (10/min) e `public-menu` (120/min) passam a valer para todos os visitantes somados;
+- sem `DataProtection__KeysPath` em volume persistente, cada reinício invalida sessões e tokens antiforgery. No plano gratuito do Render o serviço hiberna por inatividade, então a primeira visita depois de um período ocioso demora dezenas de segundos e derruba sessões anteriores;
+- o login com Google permanece indisponível enquanto não houver credenciais; o botão aparece desabilitado;
+- migrations não rodam no start. O schema precisa estar aplicado no Neon antes do deploy.

@@ -8,6 +8,7 @@ Respostas automáticas de `401`, `403`, `404` e `429` também usam `application/
 
 ```text
 GET    /auth/csrf
+GET    /auth/providers
 POST   /auth/register
 POST   /auth/login
 POST   /auth/logout
@@ -16,10 +17,13 @@ POST   /auth/forgot-password
 POST   /auth/reset-password
 GET    /auth/google/start
 GET    /auth/google/complete
-GET    /me
+GET    /auth/google/pending
+POST   /auth/google/register
+GET|PATCH /me
 
 GET|POST       /stores
 GET|PATCH      /stores/{storeId}
+PATCH          /stores/{storeId}/presentation
 PUT            /stores/{storeId}/logo
 GET|POST       /stores/{storeId}/menus
 GET|PATCH      /menus/{menuId}
@@ -35,6 +39,11 @@ PUT            /products/{productId}/image
 GET|PUT         /menus/{menuId}/theme
 
 GET /public/menus/{slug}
+GET /public/menus/{slug}/qr.svg
+GET /public/menus/{slug}/qr.png
+GET /public/stores/{slug}
+GET /public/stores/{slug}/qr.svg
+GET /public/stores/{slug}/qr.png
 GET /public/products/{productId}
 GET /public/products/{productId}/qr.svg
 GET /public/products/{productId}/qr.png
@@ -49,5 +58,6 @@ GET /public/products/{productId}/qr.png
 - Leitura pública retorna DTO mínimo e ETag, com revalidação obrigatória para que edições publicadas e mídias apareçam na próxima navegação.
 - O detalhe público só retorna produtos disponíveis dentro de categoria ativa e cardápio publicado. O UUID v7 é a identificação permanente usada na URL individual, independente do slug atual do cardápio.
 - QR Codes são gerados pelo backend apenas para produtos públicos válidos e apontam para `Frontend:PublicBaseUrl`; PNG e SVG aceitam `?download=true`.
+- O cadastro rejeita versões antigas dos documentos legais. Localização é opcional; o IP da evidência vem da conexão observada pela API depois do processamento restrito de forwarded headers.
 - O documento OpenAPI gera os tipos em `src/frontend/qrportal-web/src/app/core/generated`; execute `pnpm contracts` com a API local ativa.
 - `X-Correlation-ID` pode ser enviado pelo cliente com até 64 caracteres alfanuméricos, ponto, hífen ou underscore e sempre é devolvido na resposta.

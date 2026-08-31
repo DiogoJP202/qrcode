@@ -1,0 +1,50 @@
+# Blueprint da API para ambiente de demonstração no Render.
+# O banco (Neon) e o storage S3 já são externos: nada de stateful roda aqui.
+# Valores marcados com `sync: false` são pedidos no painel e nunca ficam versionados.
+services:
+  - type: web
+    name: qrportal-api
+    runtime: docker
+    plan: free
+    region: ohio
+    dockerfilePath: ./src/backend/QrPortal.Api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health/live
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+
+      # O Render encerra o TLS na borda e entrega HTTP ao container. Sem isso, a
+      # redireção para HTTPS entra em laço infinito.
+      - key: ReverseProxy__TlsTerminatedUpstream
+        value: "true"
+
+      # Demonstração: o Host chega reescrito pelo rewrite da Vercel. Em produção,
+      # troque pelo hostname real da API.
+      - key: AllowedHosts
+        value: "*"
+
+      # Sem SMTP configurado, a confirmação de e-mail é gravada em arquivo. O cadastro
+      # não depende dela (`RequireConfirmedAccount = false`), mas recuperação de senha sim.
+      - key: Email__Provider
+        value: LocalOutbox
+
+      # Ambas devem apontar para a URL pública da Vercel: governam CORS, os links dos
+      # e-mails e o destino gravado dentro dos QR Codes.
+      - key: Frontend__Origin
+        sync: false
+      - key: Frontend__PublicBaseUrl
+        sync: false
+
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: AWS_ENDPOINT_URL_S3
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      - key: AWS_S3_BUCKET
+        sync: false
