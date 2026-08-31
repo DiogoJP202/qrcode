@@ -33,6 +33,8 @@ ASP.NET Core API /api/v1
 - xUnit, Testcontainers, Vitest e Playwright;
 - OpenAPI, ProblemDetails, health checks e logging JSON por `ILogger`.
 
+O pipeline da API normaliza o correlation ID antes do tratamento de exceções, produz um evento estruturado por resposta usando o template da rota e sem IDs/query/body/headers, e uniformiza respostas vazias de erro como ProblemDetails. Auditoria de domínio permanece na mesma transação EF Core da alteração sempre que possível.
+
 ## Estrutura
 
 ```text

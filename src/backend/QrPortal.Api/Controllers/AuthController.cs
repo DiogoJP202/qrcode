@@ -45,6 +45,7 @@ public sealed class AuthController(IIdentityService identity, IAntiforgery antif
 
     [HttpPost("confirm-email")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> ConfirmEmail(ConfirmEmailRequest request, CancellationToken cancellationToken)
         => FromResult(await identity.ConfirmEmailAsync(request, cancellationToken));
 
@@ -65,6 +66,7 @@ public sealed class AuthController(IIdentityService identity, IAntiforgery antif
 
     [HttpGet("google/start")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public IActionResult GoogleStart()
     {
         var configuration = HttpContext.RequestServices.GetRequiredService<IConfiguration>();
@@ -75,6 +77,7 @@ public sealed class AuthController(IIdentityService identity, IAntiforgery antif
 
     [HttpGet("google/complete")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> GoogleComplete(CancellationToken cancellationToken)
     {
         var external = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);

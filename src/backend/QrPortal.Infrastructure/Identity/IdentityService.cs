@@ -77,12 +77,20 @@ public sealed class IdentityService(
     public async Task<OperationResult> ConfirmEmailAsync(ConfirmEmailRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByIdAsync(request.UserId.ToString());
-        if (user is null) return OperationResult.Fail("invalid_token", "Link de confirmação inválido.");
+        if (user is null)
+        {
+            await Audit(null, "auth.email_confirmation_failed", cancellationToken);
+            return OperationResult.Fail("invalid_token", "Link de confirmação inválido.");
+        }
         string token;
         try { token = System.Text.Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Token)); }
-        catch (FormatException) { return OperationResult.Fail("invalid_token", "Link de confirmação inválido."); }
+        catch (FormatException)
+        {
+            await Audit(user.Id, "auth.email_confirmation_failed", cancellationToken);
+            return OperationResult.Fail("invalid_token", "Link de confirmação inválido.");
+        }
         var result = await userManager.ConfirmEmailAsync(user, token);
-        if (result.Succeeded) await Audit(user.Id, "auth.email_confirmed", cancellationToken);
+        await Audit(user.Id, result.Succeeded ? "auth.email_confirmed" : "auth.email_confirmation_failed", cancellationToken);
         return result.Succeeded
             ? OperationResult.Ok()
             : OperationResult.Fail("invalid_token", result.Errors.Select(error => error.Description).ToArray());
@@ -91,21 +99,35 @@ public sealed class IdentityService(
     public async Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
-        if (user is null) return;
+        if (user is null)
+        {
+            await Audit(null, "auth.password_reset_requested", cancellationToken);
+            return;
+        }
         var token = await userManager.GeneratePasswordResetTokenAsync(user);
         var encoded = WebEncoders.Base64UrlEncode(System.Text.Encoding.UTF8.GetBytes(token));
         var link = $"{frontendOptions.Value.PublicBaseUrl.TrimEnd('/')}/redefinir-senha?userId={user.Id}&token={encoded}";
         await emailSender.SendAsync(user.Email!, "Redefina sua senha no QRPortal", $"<p>Use o link para redefinir sua senha:</p><p><a href=\"{link}\">Redefinir senha</a></p>", cancellationToken);
+        await Audit(user.Id, "auth.password_reset_requested", cancellationToken);
     }
 
     public async Task<OperationResult> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken)
     {
         var user = await userManager.FindByIdAsync(request.UserId.ToString());
-        if (user is null) return OperationResult.Fail("invalid_token", "Link de redefinição inválido.");
+        if (user is null)
+        {
+            await Audit(null, "auth.password_reset_failed", cancellationToken);
+            return OperationResult.Fail("invalid_token", "Link de redefinição inválido.");
+        }
         string token;
         try { token = System.Text.Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(request.Token)); }
-        catch (FormatException) { return OperationResult.Fail("invalid_token", "Link de redefinição inválido."); }
+        catch (FormatException)
+        {
+            await Audit(user.Id, "auth.password_reset_failed", cancellationToken);
+            return OperationResult.Fail("invalid_token", "Link de redefinição inválido.");
+        }
         var result = await userManager.ResetPasswordAsync(user, token, request.NewPassword);
+        await Audit(user.Id, result.Succeeded ? "auth.password_reset_succeeded" : "auth.password_reset_failed", cancellationToken);
         return result.Succeeded ? OperationResult.Ok() : OperationResult.Fail("validation_error", result.Errors.Select(error => error.Description).ToArray());
     }
 
@@ -118,14 +140,24 @@ public sealed class IdentityService(
     public async Task<OperationResult<UserSessionDto>> CompleteExternalLoginAsync(ClaimsPrincipal principal, CancellationToken cancellationToken)
     {
         var email = principal.FindFirstValue(ClaimTypes.Email)?.Trim().ToLowerInvariant();
-        if (string.IsNullOrWhiteSpace(email)) return OperationResult<UserSessionDto>.Fail("external_login_failed", "O Google não forneceu um e-mail válido.");
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            await Audit(null, "auth.external_login_failed", cancellationToken);
+            return OperationResult<UserSessionDto>.Fail("external_login_failed", "O Google não forneceu um e-mail válido.");
+        }
 
         var user = await userManager.FindByEmailAsync(email);
+        var accountCreated = false;
         if (user is null)
         {
             user = new ApplicationUser { Id = Guid.CreateVersion7(), Email = email, UserName = email, EmailConfirmed = true };
             var created = await userManager.CreateAsync(user);
-            if (!created.Succeeded) return OperationResult<UserSessionDto>.Fail("external_login_failed", created.Errors.Select(error => error.Description).ToArray());
+            if (!created.Succeeded)
+            {
+                await Audit(null, "auth.external_login_failed", cancellationToken);
+                return OperationResult<UserSessionDto>.Fail("external_login_failed", created.Errors.Select(error => error.Description).ToArray());
+            }
+            accountCreated = true;
         }
         else if (!user.EmailConfirmed)
         {
@@ -134,6 +166,8 @@ public sealed class IdentityService(
         }
 
         await signInManager.SignInAsync(user, isPersistent: false);
+        if (accountCreated) await Audit(user.Id, "auth.external_account_created", cancellationToken);
+        await Audit(user.Id, "auth.external_login_succeeded", cancellationToken);
         return OperationResult<UserSessionDto>.Ok(ToDto(user));
     }
 

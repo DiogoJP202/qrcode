@@ -1,3 +1,4 @@
+using System.Net;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.DataProtection;
@@ -26,9 +27,38 @@ if (!string.IsNullOrWhiteSpace(configuredConnectionString))
 
 builder.Logging.ClearProviders();
 builder.Logging.AddJsonConsole(options => options.IncludeScopes = true);
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
+{
+    var problem = context.ProblemDetails;
+    var status = problem.Status ?? context.HttpContext.Response.StatusCode;
+    if (!problem.Extensions.ContainsKey("traceId")) problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+    if (!problem.Extensions.ContainsKey("code")) problem.Extensions["code"] = status switch
+    {
+        StatusCodes.Status400BadRequest => "validation_error",
+        StatusCodes.Status401Unauthorized => "authentication_required",
+        StatusCodes.Status403Forbidden => "forbidden",
+        StatusCodes.Status404NotFound => "not_found",
+        StatusCodes.Status429TooManyRequests => "rate_limit_exceeded",
+        _ when status >= 500 => "internal_error",
+        _ => "request_failed"
+    };
+});
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddControllersWithViews(options => options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
+builder.Services.Configure<ApiBehaviorOptions>(options => options.InvalidModelStateResponseFactory = context =>
+{
+    var problem = new ValidationProblemDetails(context.ModelState)
+    {
+        Status = StatusCodes.Status400BadRequest,
+        Title = "Dados inválidos",
+        Type = "https://qrportal.com/problems/validation_error"
+    };
+    problem.Extensions["code"] = "validation_error";
+    problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+    var result = new BadRequestObjectResult(problem);
+    result.ContentTypes.Add("application/problem+json");
+    return result;
+});
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAntiforgery(options =>
@@ -65,6 +95,18 @@ builder.Services.AddCors(options => options.AddPolicy("frontend", policy => poli
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = (context, _) =>
+    {
+        var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("QrPortal.RateLimiting");
+        logger.LogWarning(
+            "Rate limit rejected {RequestMethod} {RequestRoute}. TraceId: {TraceId}",
+            context.HttpContext.Request.Method,
+            (context.HttpContext.GetEndpoint() as Microsoft.AspNetCore.Routing.RouteEndpoint)?.RoutePattern.RawText ?? "unmatched",
+            context.HttpContext.TraceIdentifier);
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            context.HttpContext.Response.Headers.RetryAfter = Math.Ceiling(retryAfter.TotalSeconds).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return ValueTask.CompletedTask;
+    };
     options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
@@ -75,10 +117,19 @@ builder.Services.AddRateLimiter(options =>
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
-builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("postgres", tags: ["ready"]);
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("postgres", tags: ["ready"])
+    .AddCheck<ExternalServicesConfigurationHealthCheck>("external-configuration", tags: ["ready"]);
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 1;
+    foreach (var configuredProxy in builder.Configuration.GetSection("ReverseProxy:KnownProxies").Get<string[]>() ?? [])
+    {
+        if (!IPAddress.TryParse(configuredProxy, out var address))
+            throw new InvalidOperationException($"ReverseProxy:KnownProxies contém um endereço inválido: {configuredProxy}.");
+        options.KnownProxies.Add(address);
+    }
 });
 
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
@@ -94,23 +145,36 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
 
 var app = builder.Build();
 app.UseForwardedHeaders();
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseExceptionHandler();
-app.Use(async (context, next) =>
+app.UseStatusCodePages(async statusCodeContext =>
 {
-    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
-    context.Response.Headers["Content-Security-Policy"] = app.Environment.IsDevelopment() && context.Request.Path.StartsWithSegments("/swagger")
-        ? "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'"
-        : "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
-    var suppliedCorrelationId = context.Request.Headers["X-Correlation-ID"].FirstOrDefault();
-    var correlationId = string.IsNullOrWhiteSpace(suppliedCorrelationId) || suppliedCorrelationId.Length > 100
-        ? Guid.CreateVersion7().ToString("N")
-        : suppliedCorrelationId;
-    context.TraceIdentifier = correlationId;
-    context.Response.Headers["X-Correlation-ID"] = correlationId;
-    await next();
+    var response = statusCodeContext.HttpContext.Response;
+    var (title, detail, code) = response.StatusCode switch
+    {
+        StatusCodes.Status401Unauthorized => ("Autenticação necessária", "Faça login para acessar este recurso.", "authentication_required"),
+        StatusCodes.Status403Forbidden => ("Acesso negado", "Você não possui permissão para executar esta operação.", "forbidden"),
+        StatusCodes.Status404NotFound => ("Recurso não encontrado", "O recurso solicitado não foi encontrado.", "not_found"),
+        StatusCodes.Status429TooManyRequests => ("Muitas solicitações", "Aguarde antes de tentar novamente.", "rate_limit_exceeded"),
+        _ => ("Não foi possível concluir a solicitação", "A solicitação não pôde ser concluída.", "request_failed")
+    };
+    var problem = new ProblemDetails
+    {
+        Status = response.StatusCode,
+        Title = title,
+        Detail = detail,
+        Type = $"https://qrportal.com/problems/{code}"
+    };
+    problem.Extensions["code"] = code;
+    problem.Extensions["traceId"] = statusCodeContext.HttpContext.TraceIdentifier;
+    await response.WriteAsJsonAsync(
+        problem,
+        options: null,
+        contentType: "application/problem+json",
+        cancellationToken: statusCodeContext.HttpContext.RequestAborted);
 });
+app.UseMiddleware<SecurityHeadersMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

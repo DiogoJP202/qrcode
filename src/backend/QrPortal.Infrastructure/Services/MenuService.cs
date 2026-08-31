@@ -47,6 +47,7 @@ public sealed class MenuService(
         var menu = new Menu(storeId, request.Name, normalized);
         menu.SetDetails(request.Name, normalized, request.Description);
         db.Menus.Add(menu);
+        AddAudit("menu.created", nameof(Menu), menu.Id);
         await db.SaveChangesAsync(cancellationToken);
         return Map(menu);
     }
@@ -57,6 +58,7 @@ public sealed class MenuService(
         var normalized = Domain.Common.Slug.Normalize(request.Slug);
         if (await db.Menus.AnyAsync(item => item.Slug == normalized && item.Id != menuId, cancellationToken)) throw new InvalidOperationException("Este slug já está em uso.");
         menu.SetDetails(request.Name, normalized, request.Description);
+        AddAudit("menu.updated", nameof(Menu), menu.Id);
         await db.SaveChangesAsync(cancellationToken);
         return Map(menu);
     }
@@ -85,6 +87,7 @@ public sealed class MenuService(
         var order = menu.Categories.Count == 0 ? 0 : menu.Categories.Max(category => category.SortOrder) + 1;
         var category = new MenuCategory(menu.Id, request.Name, request.Description, order);
         db.MenuCategories.Add(category);
+        AddAudit("category.created", nameof(MenuCategory), category.Id);
         menu.Touch();
         await db.SaveChangesAsync(cancellationToken);
         return Map(category);
@@ -94,6 +97,7 @@ public sealed class MenuService(
     {
         var category = await AuthorizedCategory(categoryId, cancellationToken);
         category.Update(request.Name, request.Description, request.IsActive);
+        AddAudit("category.updated", nameof(MenuCategory), category.Id);
         category.Menu.Touch();
         await db.SaveChangesAsync(cancellationToken);
         return Map(category);
@@ -103,6 +107,7 @@ public sealed class MenuService(
     {
         var category = await AuthorizedCategory(categoryId, cancellationToken);
         db.MenuCategories.Remove(category);
+        AddAudit("category.deleted", nameof(MenuCategory), category.Id);
         category.Menu.Touch();
         await db.SaveChangesAsync(cancellationToken);
     }
@@ -112,6 +117,7 @@ public sealed class MenuService(
         var menu = await AuthorizedMenu(menuId, true, cancellationToken);
         ValidateOrder(request, menu.Categories.Select(category => category.Id));
         foreach (var item in request.Items) menu.Categories.Single(category => category.Id == item.Id).Reorder(item.Order);
+        AddAudit("categories.reordered", nameof(Menu), menu.Id);
         menu.Touch();
         await db.SaveChangesAsync(cancellationToken);
     }
@@ -125,6 +131,7 @@ public sealed class MenuService(
         var order = category.Products.Count == 0 ? 0 : category.Products.Max(product => product.SortOrder) + 1;
         var product = new Product(category.Id, request.Name, request.Description, request.Price, request.PromotionalPrice, order);
         db.Products.Add(product);
+        AddAudit("product.created", nameof(Product), product.Id);
         menu.Touch();
         await db.SaveChangesAsync(cancellationToken);
         return Map(product);
@@ -134,6 +141,7 @@ public sealed class MenuService(
     {
         var product = await AuthorizedProduct(productId, cancellationToken);
         product.Update(request.Name, request.Description, request.Price, request.PromotionalPrice, request.IsAvailable, request.IsFeatured);
+        AddAudit("product.updated", nameof(Product), product.Id);
         product.Category.Menu.Touch();
         await db.SaveChangesAsync(cancellationToken);
         return Map(product);
@@ -143,6 +151,7 @@ public sealed class MenuService(
     {
         var product = await AuthorizedProduct(productId, cancellationToken);
         db.Products.Remove(product);
+        AddAudit("product.deleted", nameof(Product), product.Id);
         product.Category.Menu.Touch();
         await db.SaveChangesAsync(cancellationToken);
     }
@@ -153,6 +162,7 @@ public sealed class MenuService(
         var products = menu.Categories.SelectMany(category => category.Products).ToList();
         ValidateOrder(request, products.Select(product => product.Id));
         foreach (var item in request.Items) products.Single(product => product.Id == item.Id).Reorder(item.Order);
+        AddAudit("products.reordered", nameof(Menu), menu.Id);
         menu.Touch();
         await db.SaveChangesAsync(cancellationToken);
     }
@@ -250,4 +260,6 @@ public sealed class MenuService(
     private string? Url(Domain.Stores.StoredFile? file) => file is null ? null : storage.GetPublicUrl(file.StorageKey);
     private Guid UserId() => currentUser.Id ?? throw new UnauthorizedAccessException("Autenticação necessária.");
     private string CorrelationId() => httpContextAccessor.HttpContext?.TraceIdentifier ?? Guid.CreateVersion7().ToString("N");
+    private void AddAudit(string eventName, string resourceType, Guid resourceId)
+        => db.AuditLogs.Add(new AuditLog(UserId(), eventName, resourceType, resourceId, CorrelationId()));
 }

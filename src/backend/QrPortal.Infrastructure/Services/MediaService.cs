@@ -1,15 +1,23 @@
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using QrPortal.Application.Abstractions;
 using QrPortal.Application.Contracts;
 using QrPortal.Domain.Menus;
+using QrPortal.Domain.Plans;
 using QrPortal.Domain.Stores;
 using QrPortal.Infrastructure.Persistence;
 
 namespace QrPortal.Infrastructure.Services;
 
-public sealed class MediaService(ApplicationDbContext db, ICurrentUser currentUser, IImageProcessor processor, IFileStorage storage, ILogger<MediaService> logger) : IMediaService
+public sealed class MediaService(
+    ApplicationDbContext db,
+    ICurrentUser currentUser,
+    IImageProcessor processor,
+    IFileStorage storage,
+    ILogger<MediaService> logger,
+    IHttpContextAccessor httpContextAccessor) : IMediaService
 {
     public async Task<UploadResultDto> SetProductImageAsync(Guid productId, Stream content, string contentType, long length, CancellationToken cancellationToken)
     {
@@ -30,6 +38,7 @@ public sealed class MediaService(ApplicationDbContext db, ICurrentUser currentUs
         db.StoredFiles.AddRange(mainFile, thumbnailFile);
         db.ProductImages.AddRange(new ProductImage(product.Id, mainFile.Id, "main"), new ProductImage(product.Id, thumbnailFile.Id, "thumbnail"));
         db.StoredFiles.RemoveRange(oldFiles);
+        db.AuditLogs.Add(new AuditLog(userId, "product.image_updated", nameof(Product), product.Id, CorrelationId()));
         product.Category.Menu.Touch();
         try { await db.SaveChangesAsync(cancellationToken); }
         catch
@@ -57,6 +66,7 @@ public sealed class MediaService(ApplicationDbContext db, ICurrentUser currentUs
         store.SetLogo(file.Id);
         foreach (var menu in store.Menus) menu.Touch();
         if (old is not null) db.StoredFiles.Remove(old);
+        db.AuditLogs.Add(new AuditLog(userId, "store.logo_updated", nameof(Store), store.Id, CorrelationId()));
         try { await db.SaveChangesAsync(cancellationToken); }
         catch { await SafeDelete(key, cancellationToken); throw; }
         if (old is not null) await SafeDelete(old.StorageKey, cancellationToken);
@@ -78,4 +88,5 @@ public sealed class MediaService(ApplicationDbContext db, ICurrentUser currentUs
         catch (Exception exception) { logger.LogWarning(exception, "Could not delete storage object {StorageKey}", key); }
     }
     private Guid UserId() => currentUser.Id ?? throw new UnauthorizedAccessException("Autenticação necessária.");
+    private string CorrelationId() => httpContextAccessor.HttpContext?.TraceIdentifier ?? Guid.CreateVersion7().ToString("N");
 }

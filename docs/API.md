@@ -2,6 +2,8 @@
 
 Base: `/api/v1`. JSON em camelCase. Erros seguem RFC ProblemDetails com `type`, `title`, `status`, `detail`, `traceId`, `code` e, para validação, `errors` por campo.
 
+Respostas automáticas de `401`, `403`, `404` e `429` também usam `application/problem+json`. Falhas de ownership são indistinguíveis de recurso inexistente no status e na mensagem pública.
+
 ## Rotas
 
 ```text
@@ -48,3 +50,4 @@ GET /public/products/{productId}/qr.png
 - O detalhe público só retorna produtos disponíveis dentro de categoria ativa e cardápio publicado. O UUID v7 é a identificação permanente usada na URL individual, independente do slug atual do cardápio.
 - QR Codes são gerados pelo backend apenas para produtos públicos válidos e apontam para `Frontend:PublicBaseUrl`; PNG e SVG aceitam `?download=true`.
 - O documento OpenAPI gera os tipos em `src/frontend/qrportal-web/src/app/core/generated`; execute `pnpm contracts` com a API local ativa.
+- `X-Correlation-ID` pode ser enviado pelo cliente com até 64 caracteres alfanuméricos, ponto, hífen ou underscore e sempre é devolvido na resposta.

@@ -75,6 +75,19 @@ public sealed class PostgresWorkflowTests
         var forbiddenRead = await intruder.GetAsync($"/api/v1/stores/{store.Id}");
 
         Assert.Equal(HttpStatusCode.NotFound, forbiddenRead.StatusCode);
+        var forbiddenProblem = await forbiddenRead.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>();
+        Assert.NotNull(forbiddenProblem);
+        Assert.Equal("O recurso solicitado não foi encontrado.", forbiddenProblem.Detail);
+        Assert.DoesNotContain("acesso", forbiddenProblem.Detail, StringComparison.OrdinalIgnoreCase);
+
+        using var auditScope = factory.Services.CreateScope();
+        var auditEvents = await auditScope.ServiceProvider.GetRequiredService<ApplicationDbContext>().AuditLogs
+            .AsNoTracking()
+            .Select(log => log.EventName)
+            .ToListAsync();
+        Assert.Equal(2, auditEvents.Count(eventName => eventName == "auth.registered"));
+        Assert.Contains("store.created", auditEvents);
+        Assert.Contains("authorization.denied", auditEvents);
     }
 
     private static async Task<HttpClient> AuthenticatedClient(WebApplicationFactory<Program> factory, string email)

@@ -25,7 +25,7 @@ Desenvolvimento pode gravar e-mails em `data/emails` com `Email__Provider=LocalO
 
 ## Configurações
 
-Documentar e fornecer exemplos para connection string, frontend origin, domínio público, Google OAuth, SMTP, S3 endpoint/bucket/credentials e `DataProtection__KeysPath`. O diretório de chaves deve estar em volume persistente, gravável pelo usuário `app` do container. Nenhum secret é commitado.
+Documentar e fornecer exemplos para connection string, frontend origin, domínio público, Google OAuth, SMTP, S3 endpoint/bucket/credentials, `DataProtection__KeysPath` e proxies confiáveis. O diretório de chaves deve estar em volume persistente, gravável pelo usuário `app` do container. Nenhum secret é commitado.
 
 O `.env` raiz é carregado automaticamente apenas em `Development`. Para Neon Object Storage, são aceitas as variáveis AWS geradas pelo serviço e as adicionais `AWS_S3_BUCKET` e `AWS_S3_PUBLIC_URL`. Produção deve fornecer os mesmos valores pelo gerenciador de secrets da plataforma, não por arquivo versionado.
 
@@ -37,7 +37,9 @@ dotnet tool run dotnet-ef migrations has-pending-model-changes --project src/bac
 dotnet tool run dotnet-ef database update --project src/backend/QrPortal.Infrastructure --startup-project src/backend/QrPortal.Api
 ```
 
-O readiness check `/health/ready` consulta PostgreSQL; `/health/live` verifica apenas o processo. O proxy reverso deve encaminhar `X-Forwarded-For` e `X-Forwarded-Proto` a partir de um proxy confiável.
+O readiness check `/health/ready` consulta PostgreSQL e valida se storage/e-mail possuem configuração mínima completa; ele não grava no S3 nem envia e-mail. `/health/live` verifica apenas o processo. O endpoint retorna apenas o estado agregado, sem valores de configuração.
+
+O proxy reverso deve encaminhar `X-Forwarded-For` e `X-Forwarded-Proto`. A API processa somente um salto e confia por padrão apenas em loopback. Outros endereços precisam ser declarados individualmente, por exemplo `ReverseProxy__KnownProxies__0=10.0.0.10`; nunca limpe a lista de proxies/redes conhecidas para confiar em qualquer origem.
 
 ## Rollback
 

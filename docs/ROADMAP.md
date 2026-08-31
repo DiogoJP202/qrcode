@@ -31,6 +31,7 @@
 ## Fase 7 — Hardening com gate operacional
 
 - suíte unitária/integração/UI verde, ownership/CSRF/upload cobertos, migrations verificadas e operação documentada;
+- logging HTTP estruturado com redaction por exclusão, ProblemDetails sanitizado, correlation ID validado, auditoria de autenticação/catálogo/mídia, proxy confiável e readiness de configuração implementados;
 - Testcontainers e Playwright completo rodam na CI com Docker/PostgreSQL;
 - Lighthouse ≥90, backup real, credenciais de produção e smoke pós-deploy continuam como gates externos antes do lançamento público.
 
@@ -42,7 +43,7 @@
 
 ## Próximo ciclo
 
-- ampliar logging estruturado, auditoria de ações sensíveis, revisão de dados pessoais e alertas operacionais;
+- integrar logs/alertas a um destino operacional e definir retenção dos registros de auditoria após escolher a infraestrutura de produção;
 - adicionar personalização segura de tipografia, capa, espaçamentos, layout e componentes, sem CSS arbitrário;
 - implementar foto de perfil da conta com storage, processamento e remoção explícita;
 - criar página pública personalizável de apresentação do restaurante/empresa, separada do cardápio.

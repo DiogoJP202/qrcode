@@ -24,7 +24,8 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, ISe
         if (log) logger.LogError(exception, "Unhandled API error. TraceId: {TraceId}", context.TraceIdentifier);
         else if (exception is UnauthorizedAccessException)
         {
-            logger.LogWarning("Authorization denied for {Path}. TraceId: {TraceId}", context.Request.Path, context.TraceIdentifier);
+            var route = (context.GetEndpoint() as Microsoft.AspNetCore.Routing.RouteEndpoint)?.RoutePattern.RawText ?? "unmatched";
+            logger.LogWarning("Authorization denied for {RequestRoute}. TraceId: {TraceId}", route, context.TraceIdentifier);
             await PersistAuthorizationFailure(context, cancellationToken);
         }
 
@@ -35,6 +36,7 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, ISe
             Detail = exception switch
             {
                 DbUpdateException => "Os dados conflitam com um registro existente.",
+                _ when status == 404 => "O recurso solicitado não foi encontrado.",
                 _ when status == 500 => "Ocorreu um erro inesperado.",
                 _ => exception.Message
             },
@@ -43,7 +45,7 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, ISe
         problem.Extensions["code"] = code;
         problem.Extensions["traceId"] = context.TraceIdentifier;
         context.Response.StatusCode = status;
-        await context.Response.WriteAsJsonAsync(problem, cancellationToken);
+        await context.Response.WriteAsJsonAsync(problem, options: null, contentType: "application/problem+json", cancellationToken: cancellationToken);
         return true;
     }
 
