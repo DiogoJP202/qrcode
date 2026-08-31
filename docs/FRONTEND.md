@@ -31,3 +31,5 @@ Validar 375, 768, 1024 e 1440 px. O dashboard móvel usa header e navegação pr
 ## Performance
 
 Rotas por feature são lazy-loaded. Imagens públicas usam thumbnail/srcset quando aplicável. Bundle budgets e Lighthouse fazem parte do gate de release.
+
+O build de produção desativa `optimization.styles.inlineCritical`. A otimização publica a folha principal como `<link media="print" onload="this.media='all'">`, e esse handler inline é bloqueado pelo CSP servido em produção — a folha carrega, fica presa em `media="print"` e a página aparece quase sem estilo. Só o `ng serve` disfarça o problema, porque não aplica CSP. Ao mexer em CSP ou em otimização de estilos, valide o bundle servido com os headers reais, não apenas o servidor de desenvolvimento.
