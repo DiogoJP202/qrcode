@@ -61,7 +61,19 @@ public static class DependencyInjection
         services.AddScoped<IStoreService, StoreService>();
         services.AddScoped<IMenuService, MenuService>();
         services.AddScoped<IMediaService, MediaService>();
-        services.AddScoped<ITransactionalEmailSender, SmtpEmailSender>();
+        services.AddScoped<ITransactionalEmailSender>(provider =>
+        {
+            var options = provider.GetRequiredService<IOptions<EmailOptions>>().Value;
+            if (options.Provider.Equals("LocalOutbox", StringComparison.OrdinalIgnoreCase))
+            {
+                return ActivatorUtilities.CreateInstance<LocalOutboxEmailSender>(provider);
+            }
+            if (options.Provider.Equals("Smtp", StringComparison.OrdinalIgnoreCase))
+            {
+                return ActivatorUtilities.CreateInstance<SmtpEmailSender>(provider);
+            }
+            throw new InvalidOperationException($"Provedor de e-mail não suportado: {options.Provider}.");
+        });
         services.AddSingleton<IImageProcessor, SkiaImageProcessor>();
         services.AddSingleton<IFileStorage>(provider =>
         {

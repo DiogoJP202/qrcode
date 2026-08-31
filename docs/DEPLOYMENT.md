@@ -10,7 +10,7 @@
 
 ## Ambientes
 
-Desenvolvimento usa PostgreSQL e Mailpit via Compose e storage local. Staging replica cookies HTTPS, CORS e S3. Produção usa secrets do ambiente e migrations controladas.
+Desenvolvimento pode gravar e-mails em `data/emails` com `Email__Provider=LocalOutbox`, sem Mailpit. Para testar SMTP local, use Mailpit via Compose e altere o provedor para `Smtp`. Staging replica cookies HTTPS, CORS e S3. Produção usa SMTP, secrets do ambiente e migrations controladas.
 
 ## Pipeline
 

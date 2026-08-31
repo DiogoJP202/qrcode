@@ -16,6 +16,7 @@ if (string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), 
 
 var builder = WebApplication.CreateBuilder(args);
 var isE2E = builder.Environment.IsEnvironment("E2E");
+var useSecureCookies = !builder.Environment.IsDevelopment() && !isE2E;
 StorageConfiguration.ApplyAwsS3Compatibility(builder.Configuration);
 var configuredConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (!string.IsNullOrWhiteSpace(configuredConnectionString))
@@ -33,17 +34,17 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-CSRF-TOKEN";
-    options.Cookie.Name = isE2E ? "qrportal_antiforgery_e2e" : "__Host-qrportal_antiforgery";
+    options.Cookie.Name = useSecureCookies ? "__Host-qrportal_antiforgery" : "qrportal_antiforgery_local";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = isE2E ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = useSecureCookies ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
     options.Cookie.SameSite = SameSiteMode.Lax;
 });
 builder.Services.AddInfrastructure(builder.Configuration);
-if (isE2E)
+if (!useSecureCookies)
 {
     builder.Services.ConfigureApplicationCookie(options =>
     {
-        options.Cookie.Name = "qrportal_session_e2e";
+        options.Cookie.Name = "qrportal_session_local";
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     });
 }

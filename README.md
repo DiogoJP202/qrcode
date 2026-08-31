@@ -12,10 +12,9 @@ SaaS para criação e publicação de cardápios digitais.
 
 ## Desenvolvimento
 
-Pré-requisitos: .NET 10, Node 24, pnpm 11 e Docker Desktop.
+Pré-requisitos: .NET 10, Node 24 e pnpm 11. Docker Desktop é opcional quando PostgreSQL e storage remotos estão configurados no `.env`.
 
 ```bash
-docker compose up -d postgres mailpit
 dotnet restore QrPortal.sln
 pnpm install
 dotnet tool restore
@@ -24,7 +23,7 @@ dotnet run --project src/backend/QrPortal.Api --launch-profile http
 pnpm web:start
 ```
 
-API: `http://localhost:5043` · Swagger: `/swagger` · Web: `http://localhost:4200` · Mailpit: `http://localhost:8025`.
+API: `http://localhost:5043` · Swagger: `/swagger` · Web: `http://localhost:4200`. Em desenvolvimento, confirmações e recuperações são gravadas em `src/backend/QrPortal.Api/data/emails`. Para a infraestrutura local opcional, use `docker compose up -d postgres mailpit` e `Email__Provider=Smtp`.
 
 Use `pnpm build` e `pnpm test` para o gate local. `pnpm web:e2e` executa o fluxo completo com Playwright e exige PostgreSQL disponível. Com a API local ativa, `pnpm contracts` regenera os tipos TypeScript a partir do OpenAPI.
 

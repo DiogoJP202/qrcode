@@ -10,6 +10,8 @@ ASP.NET Core Identity usa `ApplicationUser` com UUID v7. O frontend nunca armaze
 - security stamp validado periodicamente para revogação;
 - logout invalida a sessão e remove o cookie.
 
+Em `Development` e `E2E`, executados por HTTP local, os cookies usam nomes sem o prefixo `__Host-` e `SameAsRequest`. Os demais ambientes mantêm `Secure=Always` e o prefixo `__Host-`.
+
 ## Antiforgery e CORS
 
 `GET /api/v1/auth/csrf` emite o token antiforgery. O Angular o envia em `X-CSRF-TOKEN` em POST/PUT/PATCH/DELETE. Produção aceita somente a origem configurada e `AllowCredentials`; curingas são proibidos.
@@ -25,4 +27,4 @@ ASP.NET Core Identity usa `ApplicationUser` com UUID v7. O frontend nunca armaze
 
 ## E-mail
 
-`ITransactionalEmailSender` usa Mailpit local e SMTP em produção. Templates não registram tokens, senhas ou PII desnecessária.
+`ITransactionalEmailSender` grava mensagens HTML em `src/backend/QrPortal.Api/data/emails` no desenvolvimento iniciado pelo comando padrão, permitindo abrir os links de confirmação e recuperação sem Docker. Defina `Email__Provider=Smtp` para usar Mailpit ou outro servidor SMTP; produção usa SMTP. O diretório local é ignorado pelo Git e templates não registram tokens, senhas ou PII desnecessária em logs.
