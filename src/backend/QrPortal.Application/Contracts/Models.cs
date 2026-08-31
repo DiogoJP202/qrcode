@@ -48,4 +48,5 @@ public sealed record UploadResultDto(Guid MainFileId, Guid ThumbnailFileId, stri
 
 public sealed record PublicMenuDto(string StoreName, string MenuName, string? Description, string Slug, string? LogoUrl, ThemeDto Theme, IReadOnlyList<PublicCategoryDto> Categories, DateTimeOffset UpdatedAt);
 public sealed record PublicCategoryDto(string Name, string? Description, IReadOnlyList<PublicProductDto> Products);
-public sealed record PublicProductDto(string Name, string? Description, decimal Price, decimal? PromotionalPrice, bool IsFeatured, string? ImageUrl, string? ThumbnailUrl);
+public sealed record PublicProductDto(Guid Id, string Name, string? Description, decimal Price, decimal? PromotionalPrice, bool IsFeatured, string? ImageUrl, string? ThumbnailUrl);
+public sealed record PublicProductDetailDto(string StoreName, string MenuName, string MenuSlug, string? LogoUrl, ThemeDto Theme, string CategoryName, PublicProductDto Product, DateTimeOffset UpdatedAt);

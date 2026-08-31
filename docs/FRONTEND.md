@@ -12,9 +12,9 @@ Não usar NgRx no MVP. Estado vindo do servidor fica em services por feature; ch
 - conta: `/login`, `/cadastro`, confirmação e recuperação;
 - privado: `/app`, cardápios, produtos, aparência, loja, conta e plano;
 - onboarding: `/app/onboarding` com retomada do passo incompleto;
-- público: `/m/:slug`, lazy-loaded e mobile-first.
+- público: `/m/:slug` e `/p/:productId`, lazy-loaded e mobile-first.
 
-O próximo ciclo público adicionará uma página de apresentação personalizável da empresa e uma rota estável de detalhe para cada produto. Cards de produto serão clicáveis; a URL individual será também o destino do QR Code do item.
+Cards de produto são clicáveis e abrem uma rota individual estável, que também é o destino do QR Code PNG/SVG. O próximo ciclo público adicionará uma página de apresentação personalizável da empresa.
 
 ## Design system
 

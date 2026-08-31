@@ -61,6 +61,7 @@ public static class DependencyInjection
         services.AddScoped<IStoreService, StoreService>();
         services.AddScoped<IMenuService, MenuService>();
         services.AddScoped<IMediaService, MediaService>();
+        services.AddSingleton<IQrCodeService, QrCodeService>();
         services.AddScoped<ITransactionalEmailSender>(provider =>
         {
             var options = provider.GetRequiredService<IOptions<EmailOptions>>().Value;

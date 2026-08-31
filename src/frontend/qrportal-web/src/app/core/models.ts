@@ -80,6 +80,7 @@ export interface MenuSummary {
 }
 
 export interface PublicProduct {
+  id: string;
   name: string;
   description: string | null;
   price: number;
@@ -99,6 +100,17 @@ export interface PublicMenu {
   logoUrl: string | null;
   theme: Theme;
   categories: PublicCategory[];
+  updatedAt: string;
+}
+
+export interface PublicProductDetail {
+  storeName: string;
+  menuName: string;
+  menuSlug: string;
+  logoUrl: string | null;
+  theme: Theme;
+  categoryName: string;
+  product: PublicProduct;
   updatedAt: string;
 }
 

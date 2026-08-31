@@ -33,6 +33,9 @@ PUT            /products/{productId}/image
 GET|PUT         /menus/{menuId}/theme
 
 GET /public/menus/{slug}
+GET /public/products/{productId}
+GET /public/products/{productId}/qr.svg
+GET /public/products/{productId}/qr.png
 ```
 
 ## Convenções
@@ -42,4 +45,6 @@ GET /public/menus/{slug}
 - Criação retorna `201` e `Location`; deleção retorna `204`.
 - Endpoints mutáveis exigem antiforgery header.
 - Leitura pública retorna DTO mínimo e ETag, com revalidação obrigatória para que edições publicadas e mídias apareçam na próxima navegação.
+- O detalhe público só retorna produtos disponíveis dentro de categoria ativa e cardápio publicado. O UUID v7 é a identificação permanente usada na URL individual, independente do slug atual do cardápio.
+- QR Codes são gerados pelo backend apenas para produtos públicos válidos e apontam para `Frontend:PublicBaseUrl`; PNG e SVG aceitam `?download=true`.
 - O documento OpenAPI gera os tipos em `src/frontend/qrportal-web/src/app/core/generated`; execute `pnpm contracts` com a API local ativa.

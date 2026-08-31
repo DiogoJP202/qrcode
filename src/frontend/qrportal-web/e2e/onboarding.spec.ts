@@ -7,6 +7,7 @@ const testPng = {
 };
 
 test("cadastro até cardápio público", async ({ page }) => {
+  test.setTimeout(90_000);
   const unique = Date.now().toString(36);
   const storeName = `Bistrô E2E ${unique}`;
 
@@ -74,6 +75,25 @@ test("cadastro até cardápio público", async ({ page }) => {
   await page.goto(publicUrl);
   await expect(page.getByRole("img", { name: `Logo ${storeName}` })).toBeVisible();
   await expect(page.getByRole("img", { name: "Bowl especial" })).toBeVisible();
+
+  const qrResponse = page.waitForResponse((response) => response.url().includes("/qr.svg") && response.status() === 200);
+  await page.getByRole("link", { name: /Bowl especial/ }).click();
+  await expect(page).toHaveURL(/\/p\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole("heading", { name: "Bowl especial" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "QR Code de Bowl especial" })).toBeVisible();
+  expect((await qrResponse).headers()["content-type"]).toContain("image/svg+xml");
+
+  for (const width of [375, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: width === 375 ? 812 : 900 });
+    await expect(page.getByRole("heading", { name: "Bowl especial" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "QR Code de Bowl especial" })).toBeVisible();
+  }
+
+  const download = page.waitForEvent("download");
+  await page.getByRole("link", { name: "PNG" }).click();
+  expect((await download).suggestedFilename()).toMatch(/^qr-[0-9a-f]{32}\.png$/);
+  await page.getByRole("link", { name: "Cardápio" }).click();
+  await expect(page).toHaveURL(publicUrl);
 });
 
 test("landing e login permanecem utilizáveis em 375 px", async ({ page }) => {

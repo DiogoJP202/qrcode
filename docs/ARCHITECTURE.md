@@ -15,7 +15,7 @@ ASP.NET Core API /api/v1
   ├── Stores
   ├── Menus/Catalog
   ├── Media
-  ├── Publishing
+  ├── Publishing/QR Code
   ├── Plans
   └── Audit
        ├── PostgreSQL
@@ -58,7 +58,7 @@ O domínio contém entidades e invariantes. Application expõe casos de uso e co
 - **Stores:** loja, branding e membros.
 - **Menus/Catalog:** cardápios, categorias, produtos e ordenação.
 - **Media:** metadados, processamento e storage.
-- **Publishing:** validação de publicação e leitura pública.
+- **Publishing:** validação de publicação, leitura pública, detalhe de produto e QR Code.
 - **Plans:** assinatura e limites centralizados.
 - **Audit:** eventos de segurança e mudanças críticas.
 
@@ -70,6 +70,7 @@ O domínio contém entidades e invariantes. Application expõe casos de uso e co
 4. Aparência é salva como dados validados, nunca como CSS arbitrário.
 5. Publicação exige e-mail confirmado, loja/cardápio válidos e produto disponível.
 6. `/m/{slug}` consome um DTO público cacheável; edições salvas em cardápio publicado aparecem imediatamente.
+7. `/p/{productId}` expõe somente produto disponível e usa a mesma URL permanente como payload do QR Code, sem depender de slugs editáveis.
 
 ## Deploy
 

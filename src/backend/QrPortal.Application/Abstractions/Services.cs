@@ -42,6 +42,13 @@ public interface IMenuService
     Task ReorderProductsAsync(Guid menuId, ReorderRequest request, CancellationToken cancellationToken);
     Task<ThemeDto> UpdateThemeAsync(Guid menuId, UpdateThemeRequest request, CancellationToken cancellationToken);
     Task<PublicMenuDto?> GetPublicAsync(string slug, CancellationToken cancellationToken);
+    Task<PublicProductDetailDto?> GetPublicProductAsync(Guid productId, CancellationToken cancellationToken);
+}
+
+public interface IQrCodeService
+{
+    byte[] GeneratePng(string payload);
+    string GenerateSvg(string payload);
 }
 
 public interface IMediaService

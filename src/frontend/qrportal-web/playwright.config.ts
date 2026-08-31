@@ -33,10 +33,11 @@ export default defineConfig({
       },
     },
     {
-      command: "pnpm exec ng serve --host 127.0.0.1 --port 4300 --proxy-config proxy.e2e.conf.json",
+      command: "pnpm exec ng serve --host 127.0.0.1 --port 4300 --proxy-config proxy.e2e.conf.json --live-reload=false --hmr=false --prebundle=false",
       url: webUrl,
       reuseExistingServer: false,
       timeout: 120_000,
+      env: { CI: "true" },
     },
   ],
 });

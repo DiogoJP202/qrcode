@@ -13,6 +13,7 @@ export const routes: Routes = [
   { path: "confirmar-email", loadComponent: () => import("./features/auth/account-action.page").then((m) => m.AccountActionPage), data: { mode: "confirm" } },
   { path: "esqueci-senha", loadComponent: () => import("./features/auth/account-action.page").then((m) => m.AccountActionPage), data: { mode: "forgot" } },
   { path: "redefinir-senha", loadComponent: () => import("./features/auth/account-action.page").then((m) => m.AccountActionPage), data: { mode: "reset" } },
+  { path: "p/:productId", loadComponent: () => import("./features/public-product/public-product.page").then((m) => m.PublicProductPage) },
   { path: "m/:slug", loadComponent: () => import("./features/public-menu/public-menu.page").then((m) => m.PublicMenuPage) },
   {
     path: "app",

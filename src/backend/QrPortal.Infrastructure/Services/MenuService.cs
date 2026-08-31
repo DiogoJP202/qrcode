@@ -174,13 +174,22 @@ public sealed class MenuService(
             .SingleOrDefaultAsync(item => item.Slug == normalized && item.Status == MenuStatus.Published, cancellationToken);
         if (menu is null) return null;
         var categories = menu.Categories.Where(category => category.IsActive).OrderBy(category => category.SortOrder)
-            .Select(category => new PublicCategoryDto(category.Name, category.Description, category.Products.Where(product => product.IsAvailable).OrderBy(product => product.SortOrder).Select(product =>
-            {
-                var main = product.Images.FirstOrDefault(image => image.Variant == "main")?.File;
-                var thumb = product.Images.FirstOrDefault(image => image.Variant == "thumbnail")?.File;
-                return new PublicProductDto(product.Name, product.Description, product.Price, product.PromotionalPrice, product.IsFeatured, Url(main), Url(thumb));
-            }).ToList())).ToList();
-        return new PublicMenuDto(menu.Store.PublicName, menu.Name, menu.Description, menu.Slug, Url(menu.Store.LogoFile), Map(menu.Theme), categories, menu.UpdatedAt);
+            .Select(category => new PublicCategoryDto(category.Name, category.Description, category.Products.Where(product => product.IsAvailable).OrderBy(product => product.SortOrder).Select(MapPublic).ToList())).ToList();
+        return new PublicMenuDto(menu.Store.PublicName, menu.Name, menu.Description, menu.Slug, Url(menu.Store.LogoFile), Map(menu.Theme), categories, PublicUpdatedAt(menu));
+    }
+
+    public async Task<PublicProductDetailDto?> GetPublicProductAsync(Guid productId, CancellationToken cancellationToken)
+    {
+        var product = await db.Products.AsNoTracking()
+            .Include(item => item.Images).ThenInclude(image => image.File)
+            .Include(item => item.Category).ThenInclude(category => category.Menu).ThenInclude(menu => menu.Theme)
+            .Include(item => item.Category).ThenInclude(category => category.Menu).ThenInclude(menu => menu.Store).ThenInclude(store => store.LogoFile)
+            .SingleOrDefaultAsync(item => item.Id == productId && item.IsAvailable && item.Category.IsActive && item.Category.Menu.Status == MenuStatus.Published, cancellationToken);
+        if (product is null) return null;
+
+        var category = product.Category;
+        var menu = category.Menu;
+        return new PublicProductDetailDto(menu.Store.PublicName, menu.Name, menu.Slug, Url(menu.Store.LogoFile), Map(menu.Theme), category.Name, MapPublic(product), PublicUpdatedAt(menu));
     }
 
     private IQueryable<Menu> MenuQuery() => db.Menus
@@ -230,7 +239,14 @@ public sealed class MenuService(
         var thumb = product.Images.FirstOrDefault(image => image.Variant == "thumbnail")?.File;
         return new ProductDto(product.Id, product.CategoryId, product.Name, product.Description, product.Price, product.PromotionalPrice, product.IsAvailable, product.IsFeatured, product.SortOrder, Url(main), Url(thumb));
     }
+    private PublicProductDto MapPublic(Product product)
+    {
+        var main = product.Images.FirstOrDefault(image => image.Variant == "main")?.File;
+        var thumb = product.Images.FirstOrDefault(image => image.Variant == "thumbnail")?.File;
+        return new PublicProductDto(product.Id, product.Name, product.Description, product.Price, product.PromotionalPrice, product.IsFeatured, Url(main), Url(thumb));
+    }
     private static ThemeDto Map(MenuTheme theme) => new(theme.Preset, theme.PrimaryColor, theme.SecondaryColor, theme.BackgroundColor, theme.Style);
+    private static DateTimeOffset PublicUpdatedAt(Menu menu) => menu.Store.UpdatedAt > menu.UpdatedAt ? menu.Store.UpdatedAt : menu.UpdatedAt;
     private string? Url(Domain.Stores.StoredFile? file) => file is null ? null : storage.GetPublicUrl(file.StorageKey);
     private Guid UserId() => currentUser.Id ?? throw new UnauthorizedAccessException("Autenticação necessária.");
     private string CorrelationId() => httpContextAccessor.HttpContext?.TraceIdentifier ?? Guid.CreateVersion7().ToString("N");

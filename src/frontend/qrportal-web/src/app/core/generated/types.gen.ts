@@ -107,6 +107,45 @@ export type ProductDto = {
     thumbnailUrl: null | string;
 };
 
+export type PublicCategoryDto = {
+    name: string;
+    description: null | string;
+    products: Array<PublicProductDto>;
+};
+
+export type PublicMenuDto = {
+    storeName: string;
+    menuName: string;
+    description: null | string;
+    slug: string;
+    logoUrl: null | string;
+    theme: ThemeDto;
+    categories: Array<PublicCategoryDto>;
+    updatedAt: string;
+};
+
+export type PublicProductDetailDto = {
+    storeName: string;
+    menuName: string;
+    menuSlug: string;
+    logoUrl: null | string;
+    theme: ThemeDto;
+    categoryName: string;
+    product: PublicProductDto;
+    updatedAt: string;
+};
+
+export type PublicProductDto = {
+    id: string;
+    name: string;
+    description: null | string;
+    price: number | string;
+    promotionalPrice: null | number | string;
+    isFeatured: boolean;
+    imageUrl: null | string;
+    thumbnailUrl: null | string;
+};
+
 export type RegisterRequest = {
     email: string;
     password: string;
@@ -608,6 +647,45 @@ export type GetApiV1PublicMenusBySlugData = {
 };
 
 export type GetApiV1PublicMenusBySlugResponses = {
+    /**
+     * OK
+     */
+    200: PublicMenuDto;
+};
+
+export type GetApiV1PublicMenusBySlugResponse = GetApiV1PublicMenusBySlugResponses[keyof GetApiV1PublicMenusBySlugResponses];
+
+export type GetApiV1PublicProductsByProductIdData = {
+    body?: never;
+    path: {
+        productId: string;
+    };
+    query?: never;
+    url: '/api/v1/public/products/{productId}';
+};
+
+export type GetApiV1PublicProductsByProductIdResponses = {
+    /**
+     * OK
+     */
+    200: PublicProductDetailDto;
+};
+
+export type GetApiV1PublicProductsByProductIdResponse = GetApiV1PublicProductsByProductIdResponses[keyof GetApiV1PublicProductsByProductIdResponses];
+
+export type GetApiV1PublicProductsByProductIdQrByFormatData = {
+    body?: never;
+    path: {
+        productId: string;
+        format: string;
+    };
+    query?: {
+        download?: boolean;
+    };
+    url: '/api/v1/public/products/{productId}/qr.{format}';
+};
+
+export type GetApiV1PublicProductsByProductIdQrByFormatResponses = {
     /**
      * OK
      */
