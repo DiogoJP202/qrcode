@@ -7,7 +7,14 @@ test("cadastro até cardápio público", async ({ page }) => {
   await page.goto("/cadastro");
   await page.getByPlaceholder("voce@negocio.com").fill(`owner-${unique}@qrportal.test`);
   await page.getByPlaceholder("Mínimo de 10 caracteres").fill("StrongPass123");
+
+  const registrationResponse = page.waitForResponse((response) =>
+    response.url().endsWith("/api/v1/auth/register") && response.request().method() === "POST",
+  );
   await page.getByRole("button", { name: "Criar conta grátis" }).click();
+  const registration = await registrationResponse;
+  const registrationBody = registration.ok() ? "" : await registration.text();
+  expect(registration.ok(), `Cadastro retornou HTTP ${registration.status()}: ${registrationBody}`).toBeTruthy();
   await expect(page).toHaveURL(/\/app\/onboarding/);
 
   await page.getByPlaceholder("Ex.: Casa Manjericão").fill(storeName);
