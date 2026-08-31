@@ -15,6 +15,9 @@ namespace QrPortal.Api.Controllers;
 [Route("api/v1/auth")]
 public sealed class AuthController(IIdentityService identity, IAntiforgery antiforgery, IOptions<FrontendOptions> frontend) : ApiControllerBase
 {
+    // A URL pública é configurada por ambiente e pode chegar com barra final.
+    private string FrontendBaseUrl => frontend.Value.PublicBaseUrl.TrimEnd('/');
+
     [HttpGet("csrf")]
     [AllowAnonymous]
     public ActionResult<object> Csrf()
@@ -91,18 +94,18 @@ public sealed class AuthController(IIdentityService identity, IAntiforgery antif
     public async Task<IActionResult> GoogleComplete(CancellationToken cancellationToken)
     {
         var external = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
-        if (!external.Succeeded || external.Principal is null) return Redirect($"{frontend.Value.PublicBaseUrl}/login?error=google");
+        if (!external.Succeeded || external.Principal is null) return Redirect($"{FrontendBaseUrl}/login?error=google");
         var result = await identity.LoginExternalAsync(external.Principal, cancellationToken);
         if (result.Succeeded)
         {
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-            return Redirect($"{frontend.Value.PublicBaseUrl}/app");
+            return Redirect($"{FrontendBaseUrl}/app");
         }
         if (result.Code == "external_registration_required")
-            return Redirect($"{frontend.Value.PublicBaseUrl}/cadastro-google");
+            return Redirect($"{FrontendBaseUrl}/cadastro-google");
 
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-        return Redirect($"{frontend.Value.PublicBaseUrl}/login?error=google");
+        return Redirect($"{FrontendBaseUrl}/login?error=google");
     }
 
     [HttpGet("google/pending")]
