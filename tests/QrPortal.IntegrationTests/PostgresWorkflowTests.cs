@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -27,6 +26,32 @@ public sealed class PostgresWorkflowTests
         var configured = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.GetConnectionString();
 
         Assert.Equal(connectionString, configured);
+    }
+
+    [Fact]
+    public async Task Database_factory_exposes_anonymous_csrf_token()
+    {
+        const string connectionString = "Host=database.test;Database=qrportal;Username=tester;Password=test-password";
+        using var factory = new DatabaseApiFactory(connectionString);
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
+
+        var response = await client.GetAsync("/api/v1/auth/csrf");
+        var token = await ReadCsrfToken(response);
+
+        Assert.False(string.IsNullOrWhiteSpace(token));
+        Assert.Contains(response.Headers.GetValues("Set-Cookie"), value => value.StartsWith("__Host-qrportal_antiforgery=", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Database_factory_rejects_mutation_without_csrf_token()
+    {
+        const string connectionString = "Host=database.test;Database=qrportal;Username=tester;Password=test-password";
+        using var factory = new DatabaseApiFactory(connectionString);
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
+
+        var response = await client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest("tester@qrportal.test", "StrongPass123"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [DockerFact]
@@ -56,7 +81,7 @@ public sealed class PostgresWorkflowTests
     {
         var client = factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
         var anonymousCsrf = await client.GetAsync("/api/v1/auth/csrf");
-        var anonymousToken = (await JsonDocument.ParseAsync(await anonymousCsrf.Content.ReadAsStreamAsync())).RootElement.GetProperty("token").GetString()!;
+        var anonymousToken = await ReadCsrfToken(anonymousCsrf);
         var antiforgeryCookie = Cookie(anonymousCsrf, "__Host-qrportal_antiforgery");
 
         using var register = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/register")
@@ -72,12 +97,25 @@ public sealed class PostgresWorkflowTests
         using var refresh = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/csrf");
         refresh.Headers.Add("Cookie", $"{antiforgeryCookie}; {sessionCookie}");
         var authenticatedCsrf = await client.SendAsync(refresh);
-        var authenticatedToken = (await JsonDocument.ParseAsync(await authenticatedCsrf.Content.ReadAsStreamAsync())).RootElement.GetProperty("token").GetString()!;
+        var authenticatedToken = await ReadCsrfToken(authenticatedCsrf);
         var refreshedAntiforgery = CookieOrDefault(authenticatedCsrf, "__Host-qrportal_antiforgery", antiforgeryCookie);
 
         client.DefaultRequestHeaders.Add("Cookie", $"{refreshedAntiforgery}; {sessionCookie}");
         client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", authenticatedToken);
         return client;
+    }
+
+    private static async Task<string> ReadCsrfToken(HttpResponseMessage response)
+    {
+        if (!response.IsSuccessStatusCode)
+        {
+            var problem = await response.Content.ReadAsStringAsync();
+            Assert.Fail($"Falha ao obter CSRF ({(int)response.StatusCode}): {problem}");
+        }
+        var payload = await response.Content.ReadFromJsonAsync<CsrfResponse>();
+        Assert.NotNull(payload);
+        Assert.False(string.IsNullOrWhiteSpace(payload.Token));
+        return payload.Token;
     }
 
     private static string Cookie(HttpResponseMessage response, string name)
@@ -88,6 +126,8 @@ public sealed class PostgresWorkflowTests
             ? values.Select(value => value.Split(';')[0]).FirstOrDefault(value => value.StartsWith(name, StringComparison.Ordinal)) ?? fallback
             : fallback;
 }
+
+public sealed record CsrfResponse(string Token);
 
 public sealed class DatabaseApiFactory(string connectionString) : WebApplicationFactory<Program>
 {
