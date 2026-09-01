@@ -15,7 +15,7 @@ import { exampleMenu, findExampleProduct } from "./example-menu";
       <div class="border-b border-amber-200 bg-amber-50 px-5 py-3">
         <div class="mx-auto flex max-w-5xl items-start gap-2.5 text-sm leading-6 text-amber-900">
           <svg lucideInfo class="mt-0.5 shrink-0" size="18" aria-hidden="true"></svg>
-          <p><strong class="font-black">Exemplo de produto publicado.</strong> O QR Code ao lado é real: aponte a câmera e ele abre esta mesma página.</p>
+          <p><strong class="font-black">Exemplo de produto publicado.</strong> Cada item do cardápio ganha uma página como esta, com QR Code próprio que abre exatamente este endereço.</p>
         </div>
       </div>
 
