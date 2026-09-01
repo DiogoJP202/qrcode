@@ -9,6 +9,7 @@ export const routes: Routes = [
   { path: "planos", loadComponent: () => import("./features/marketing/content.page").then((m) => m.ContentPage), data: { page: "planos" } },
   { path: "contato", loadComponent: () => import("./features/marketing/content.page").then((m) => m.ContentPage), data: { page: "contato" } },
   { path: "exemplo", loadComponent: () => import("./features/marketing/example.page").then((m) => m.ExamplePage) },
+  { path: "exemplo/:slug", loadComponent: () => import("./features/marketing/example-product.page").then((m) => m.ExampleProductPage) },
   { path: "termos", loadComponent: () => import("./features/marketing/legal.page").then((m) => m.LegalPage), data: { document: "terms" } },
   { path: "privacidade", loadComponent: () => import("./features/marketing/legal.page").then((m) => m.LegalPage), data: { document: "privacy" } },
   { path: "login", loadComponent: () => import("./features/auth/auth.page").then((m) => m.AuthPage), data: { mode: "login" } },

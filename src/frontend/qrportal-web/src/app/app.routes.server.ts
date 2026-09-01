@@ -1,3 +1,4 @@
+import { exampleProducts } from "./features/marketing/example-menu";
 import { RenderMode, ServerRoute } from "@angular/ssr";
 
 export const serverRoutes: ServerRoute[] = [
@@ -8,6 +9,7 @@ export const serverRoutes: ServerRoute[] = [
   { path: "planos", renderMode: RenderMode.Prerender },
   { path: "contato", renderMode: RenderMode.Prerender },
   { path: "exemplo", renderMode: RenderMode.Prerender },
+  { path: "exemplo/:slug", renderMode: RenderMode.Prerender, getPrerenderParams: async () => exampleProducts.map((product) => ({ slug: product.slug })) },
   { path: "termos", renderMode: RenderMode.Prerender },
   { path: "privacidade", renderMode: RenderMode.Prerender },
   { path: "erro/403", renderMode: RenderMode.Prerender },
