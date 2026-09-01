@@ -22,6 +22,7 @@ import { SiteHeaderComponent } from "../../shared/site-header.component";
             <p class="mt-7 max-w-xl text-lg leading-8 text-slate-600 sm:text-xl">Crie, personalize e publique seu cardápio digital em minutos. Seus clientes acessam pelo celular — você atualiza quando quiser.</p>
             <div class="mt-9 flex flex-col gap-3 sm:flex-row">
               <a routerLink="/cadastro" class="btn-primary btn-brand px-6">Criar meu cardápio grátis <svg lucideArrowRight size="18" aria-hidden="true"></svg></a>
+              <a routerLink="/exemplo" class="btn-secondary px-6">Ver um cardápio pronto</a>
               <a href="#como-funciona" class="btn-secondary px-6">Ver como funciona</a>
             </div>
             <div class="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold text-slate-500">

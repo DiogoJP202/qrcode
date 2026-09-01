@@ -7,6 +7,7 @@ export const serverRoutes: ServerRoute[] = [
   { path: "clientes", renderMode: RenderMode.Prerender },
   { path: "planos", renderMode: RenderMode.Prerender },
   { path: "contato", renderMode: RenderMode.Prerender },
+  { path: "exemplo", renderMode: RenderMode.Prerender },
   { path: "termos", renderMode: RenderMode.Prerender },
   { path: "privacidade", renderMode: RenderMode.Prerender },
   { path: "erro/403", renderMode: RenderMode.Prerender },
